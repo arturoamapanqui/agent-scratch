@@ -66,3 +66,4 @@ devops/              contenedor y compose
 ```
 
 Las dependencias van `infrastructure → application → domain`, nunca al revés.
+
