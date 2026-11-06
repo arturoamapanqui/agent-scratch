@@ -1,7 +1,6 @@
 # agent-scratch
 
-Agente conversacional bancario del **Banco Demo** (ficticio), construido paso a paso en el Workshop IA Engineers.
-Cada equipo lo adapta a su dominio y lo hace crecer sesión a sesión hasta la v1.0.
+Agente conversacional bancario del **Banco Demo** (ficticio), construido paso a paso en el Workshop IA Engineers. Cada equipo lo adapta a su dominio y lo hace crecer sesión a sesión hasta la v1.0.
 
 ## Objetivo
 
