@@ -7,7 +7,7 @@ from agent.infrastructure.evaluation.golden_file import golden_files, read_golde
 
 GOLDEN = ROOT / "evals" / "golden"
 DOMAINS = ["fraud", "fees", "cards", "loans", "support"]
-CASES_BY_TYPE = {"answerable": 19, "follow_up": 3, "expired": 3, "noise": 2, "out_of_scope": 2, "personal_data": 2}
+CASES_BY_TYPE = {"answerable": 18, "follow_up": 3, "expired": 3, "noise": 2, "out_of_scope": 2, "personal_data": 2}
 
 
 @pytest.mark.parametrize("domain", DOMAINS)
