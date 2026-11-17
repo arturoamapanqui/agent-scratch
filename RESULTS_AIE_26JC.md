@@ -85,3 +85,37 @@ Los 7 casos base que fallan en hechos se agrupan en tres causas:
 
 El juez (apoyo 5.0, relevancia 5.0) confirma que las respuestas de paráfrasis están bien fundamentadas: es un fallo de forma, no de contenido.
 
+
+## Sesión 6 — Tools del MCP en el chat
+
+Dominio: `support`. MCP: el mock (`http://127.0.0.1:8200/mcp`) y el compartido (`bank-mcp`, configurado en `MCP_URL`).
+
+### Tools de tu dominio
+
+| MCP | Tools que lista `dev/mcp/mcp_tools.py` |
+|---|---|
+| Mock | `find_branches` (consulta: `district`, `service`), `get_request_status` (consulta: `request_id`), `update_contact_details` (acción sensible: `customer_id`, `email`, `phone`) |
+| Compartido | Las mismas 3: `find_branches` (consulta), `get_request_status` (consulta), `update_contact_details` (acción sensible) |
+
+### Conversación en `dev/chat.py` (paso 12)
+
+| Prueba | Mensaje | Tool pedida (`→`) | Qué pasó | Primer texto / respuesta completa (ms) |
+|---|---|---|---|---|
+| Consulta de tu dominio | ¿Dónde hay una agencia en Miraflores? | `find_branches(district=Miraflores)` | `data_query`. La tool devolvió BRN-02 y el agente respondió "Agencia Miraflores — Calle Ficticia 456", con horario y servicios (caja y plataforma). El horario de los sábados no viene de la tool: sale del fragmento citado, `channels-and-hours.html`. | 15054 / 15259 |
+| Acción confirmada | Soy CUS-1001, actualiza mi correo a ana.demo@example.com | `update_contact_details(customer_id=CUS-1001, email=ana.demo@example.com)` | `sensitive_action`. **No se ejecuta**: la tool responde `pendiente_aprobacion`. El agente le dice al cliente que lo pidió, que la solicitud queda pendiente de revisión de un asesor y que se valida con un código enviado al correo anterior. Cita `contact-details-update.docx`. | 16426 / 17299 |
+| Sin tool que la resuelva | podrías pagar el recibo de mi netflix | — (ninguna) | `out_of_scope`. Dice que no puede ejecutar pagos desde el chat y lo deriva a la app o a la banca por internet (24 h). Cita `app-faq.md` y `channels-and-hours.html`. | 11902 / 12094 |
+| Sin tool que la resuelva (2) | podrías generar un reporte html | — (ninguna) | `out_of_scope`. Dice que no puede y le ofrece los temas que sí cubre. No cita fuentes. | 9399 / 9551 |
+| Tool de otro dominio | Soy CUS-1001, ¿puedo subir la línea de mi tarjeta CRD-2001 a 4000? | — (ninguna; `request_credit_line_increase` es de `cards` y no aparece para `support`) | `product_question`. No intentó llamar a ninguna tool. Dice que no tiene información sobre aumentos de línea y lo deriva a banca por teléfono, a la app o a la banca por internet. | — |
+
+### ¿El modelo inventó algún dato cuando ninguna tool lo resolvía?
+
+No. En las tres pruebas sin tool (Netflix, reporte HTML y línea de tarjeta) no inventó saldos, montos ni resultados. Dijo que no podía hacerlo y derivó al canal correcto. Los datos que dio (la app permite pagos; app y banca por internet 24 h; teléfono (01) 555-0200, de lunes a sábado de 8:00 a 20:00) están en `app-faq.md` y `channels-and-hours.html`.
+
+Lo único sin respaldo está en la consulta de Miraflores: al final ofreció "¿reserve un turno?". Ninguna tool ni documento permite reservar turnos, así que es una oferta inventada (no un dato).
+
+### Conclusión
+
+- **El filtro por dominio funciona.** El header `X-Bank-Domain` deja 3 tools a `support`, y el mock y el compartido devuelven la misma lista. Ante una petición de `cards`, el agente no ve `request_credit_line_increase` y no intenta usarla.
+- **Elige bien la tool:** `find_branches` para la consulta de agencias. Además combina el resultado de la tool con el RAG (el horario de los sábados).
+- **Las acciones sensibles no se ejecutan solas:** `update_contact_details` queda en `pendiente_aprobacion` y el agente se lo comunica bien al cliente.
+- **Sin tool, no inventa datos:** responde `out_of_scope` y deriva.
