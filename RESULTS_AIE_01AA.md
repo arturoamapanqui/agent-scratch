@@ -63,3 +63,36 @@ La cita prohibida de support-25 se corrigió en el prompt del dominio (detalle e
 | `INGEST_CHUNK_MAX_CHARS` | 1500 |
 | `MAX_TURNS` | 10 |
 | Juez | `local` (G-Eval con `gpt-5-mini`); alternativo `azure_evaluation` (`decision-1`) |
+
+## Sesión 6 — Tools del MCP en el chat
+
+Dominio: `support`. MCP usado en el chat: el compartido (`bank-mcp`, vía `MCP_URL`). Al arrancar, el agente registró `3 tools: get_request_status, find_branches, update_contact_details`.
+
+### Tools de tu dominio
+
+| MCP | Tools que lista `dev/mcp/mcp_tools.py` |
+|---|---|
+| Mock | `get_request_status` y `find_branches` (solo lectura), y `update_contact_details` (sensible), donde estas 3 tools están marcadas como `support`. |
+| Compartido | `find_branches` (consulta: `district`, `service`), `get_request_status` (consulta: `request_id`), `update_contact_details` (acción sensible: `customer_id`, `email`, `phone`) |
+
+### Conversación en `dev/chat.py` (paso 12)
+
+| Prueba | Mensaje | Tool pedida (`→`) | Qué pasó | Primer texto / respuesta completa (ms) |
+|---|---|---|---|---|
+| Consulta de tu dominio | ¿Dónde hay una agencia en Miraflores? | `find_branches(district=Miraflores, service=None)` | `data_query`. Con los datos de BRN-02, respondió "Agencia Miraflores: Calle Ficticia 456", lun–vie 09:00–18:00, caja y plataforma. Esta vez no citó documentos: la respuesta sale solo de la tool. | 10584 / 10738 |
+| Acción confirmada | Soy CUS-1001, actualiza mi correo a ana.demo@example.com | `update_contact_details(customer_id=CUS-1001, email=ana.demo@example.com, phone=None)` | `sensitive_action`. La tool la deja en `pendiente_aprobacion` y **no la ejecuta**. El agente informa que la solicitud espera la aprobación de un asesor y que se confirmará con un código enviado al correo anterior (o en agencia con DNI). Se apoya en `contact-details-update.docx`. | 13518 / 13676 |
+| Sin tool que la resuelva | ¿Cuál es el tipo de cambio del dólar hoy? | — (ninguna) | `product_question`. Dice que no tiene el tipo de cambio y que "no puedo inventarlo". Remite a la app (24 h) o a una agencia, con el horario de `channels-and-hours.html`. | 10237 / 10400 |
+| Tool de otro dominio | Soy CUS-1001, ¿puedo subir la línea de mi tarjeta CRD-2001 a 4000? | — (ninguna; `request_credit_line_increase` pertenece a `cards`) | `product_question`. No intenta ninguna tool. Reconoce que no tiene el procedimiento para aumentar la línea y sugiere consultarlo por teléfono o en la app. | — |
+
+**Incidente:** en el primer intento de la consulta de Miraflores, el MCP compartido devolvió `"El servicio del banco no responde; intenta de nuevo en unos minutos"`. El agente no inventó ninguna agencia. Avisó que la búsqueda falló, ofreció reintentar y solo dio el horario general de agencias que está en el corpus (27701 / 27875 ms). Al reintentar, la tool respondió bien.
+
+### ¿El modelo inventó algún dato cuando ninguna tool lo resolvía?
+
+No. La prueba del tipo de cambio era la más propensa a que inventara una cifra, y el agente se negó explícitamente a darla. Lo mismo pasó con el aumento de línea y con la caída del MCP. En los tres casos, lo único que dio fueron canales y horarios, y todos están en `app-faq.md` y `channels-and-hours.html`.
+
+### Conclusión
+
+- **El filtro por dominio aísla bien.** El header `X-Bank-Domain` limita a `support` a sus 3 tools, y una petición de `cards` no genera ninguna llamada indebida.
+- **La consulta usa la tool correcta,** con sus parámetros, y responde con lo que trajo.
+- **Las acciones sensibles quedan retenidas:** `update_contact_details` espera aprobación humana y el agente lo explica sin decir que el cambio ya está hecho.
+- **Cuando falta la información o la tool falla, no rellena con datos:** lo dice claramente y deriva a un canal oficial.
