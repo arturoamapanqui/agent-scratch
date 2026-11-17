@@ -439,13 +439,17 @@ apoyo: 5.0/5 relevancia: 4.9/5 cita correcta: 1.0
 fugas de datos personales: 0 citas de fuentes prohibidas: 1
 tokens: 22846 de entrada, 13779 de salida
 
-# MCP Results:
+## Sesión 6 — Tools del MCP en el chat
+
+### Tools de tu dominio
 
 ❯ uv run python dev/mcp/mcp_tools.py
 http://127.0.0.1:8200/mcp · support · 3 tools
 find_branches consulta district, service
 get_request_status consulta request_id
 update_contact_details acción sensible customer_id, email, phone
+
+### ¿El modelo inventó algún dato cuando ninguna tool lo resolvía?
 
 uv run python dev/mcp/mcp_tools.py simulate_installment amount=20000 term_months=24
 Error de la tool: Unknown tool: 'simulate_installment'
@@ -510,7 +514,7 @@ INFO: Started server process [92991]
 INFO: Waiting for application startup.
 INFO: Application startup complete.
 
-### Speaking with agent with tools
+### Conversación en `dev/chat.py` (paso 12)
 
 Tú: ¿Dónde hay una agencia en Miraflores?
 → find_branches(district=Miraflores, service=None)
@@ -772,3 +776,7 @@ npm notice run 'inspector' --cli --server-url http://127.0.0.1:8200/mcp --transp
 }
 ]
 }
+
+### Conclusión
+
+El agente usando MCP cuando tenemos conexion al servidor solo tenemos acceso a nuestro dominio.
