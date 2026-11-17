@@ -83,4 +83,4 @@ No inventa datos, solo indica sus limitaciones para responder la pregunta.
 
 ### Conclusión
 
-El agente usa las tools de MCP cuando tenemos conexion al servidor y solo tenemos acceso a tools de nuestro dominio. El agente indica sus limitaciones al usuario.
+El agente usa las tools de MCP cuando tenemos conexion al servidor y solo tenemos acceso a tools de nuestro dominio. El agente indica sus limitaciones al usuario
