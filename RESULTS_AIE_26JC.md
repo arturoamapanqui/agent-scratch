@@ -107,6 +107,8 @@ Dominio: `support`. MCP: el mock (`http://127.0.0.1:8200/mcp`) y el compartido (
 | Sin tool que la resuelva (2) | podrías generar un reporte html | — (ninguna) | `out_of_scope`. Dice que no puede y le ofrece los temas que sí cubre. No cita fuentes. | 9399 / 9551 |
 | Tool de otro dominio | Soy CUS-1001, ¿puedo subir la línea de mi tarjeta CRD-2001 a 4000? | — (ninguna; `request_credit_line_increase` es de `cards` y no aparece para `support`) | `product_question`. No intentó llamar a ninguna tool. Dice que no tiene información sobre aumentos de línea y lo deriva a banca por teléfono, a la app o a la banca por internet. | — |
 
+
+
 ### ¿El modelo inventó algún dato cuando ninguna tool lo resolvía?
 
 No. En las tres pruebas sin tool (Netflix, reporte HTML y línea de tarjeta) no inventó saldos, montos ni resultados. Dijo que no podía hacerlo y derivó al canal correcto. Los datos que dio (la app permite pagos; app y banca por internet 24 h; teléfono (01) 555-0200, de lunes a sábado de 8:00 a 20:00) están en `app-faq.md` y `channels-and-hours.html`.
