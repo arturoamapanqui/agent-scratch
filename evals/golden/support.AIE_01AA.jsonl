@@ -1,0 +1,1 @@
+{"id": "support-AIE01AA", "type": "answerable", "history": [], "question": "¿Puedo cerrar mi cuenta de ahorros si todavía tengo deudas con el banco?", "expected_intent": "product_question", "expected_sources": ["requirements-by-procedure.pdf"], "forbidden_sources": [], "key_facts": ["deudas asociadas"]}
