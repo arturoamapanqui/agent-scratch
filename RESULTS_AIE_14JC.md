@@ -780,3 +780,26 @@ npm notice run 'inspector' --cli --server-url http://127.0.0.1:8200/mcp --transp
 ### Conclusión
 
 El agente usando MCP cuando tenemos conexion al servidor solo tenemos acceso a nuestro dominio.
+
+## Sesión 7 — Skills, memoria de trabajo y Agent Framework
+
+Dominio: `support`. La misma conversación con los dos runtimes (paso 7).
+
+|                                            | `react`                             | `agent_framework`                                                                                                                                                    |
+| ------------------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tools pedidas en la consulta               | _(find_branches)_                   | _(find_branches(district=Miraflores, service=None)_                                                                                                                  |
+| La acción sensible quedó **NO SE EJECUTA** | _( )_                               | _( )_                                                                                                                                                                |
+| Pregunta de memoria respondida sin `→`     | _district=Miraflores, service=None_ | _({"result": [{"id": "BRN-02", "name": "Agencia Miraflores", "district": "Miraflores", "address": "Calle Ficticia 456", "hours": "L-V 9:00-18:00", "services": ["c)_ |
+| Primer texto (ms)                          | _(9653)_                            | _(4938)_                                                                                                                                                             |
+| Respuesta completa (ms)                    | _(23477)_                           | _(16595)_                                                                                                                                                            |
+| Tokens (entrada / salida)                  | _(2946/1109)_                       | _(3342/1557)_                                                                                                                                                        |
+
+### ¿La skill frenó la tool de otro dominio?
+
+Mensaje: _(anotar)_. Respuesta: _(anotar)_.
+
+### Diferencias entre los dos runtimes
+
+_(anotar)_
+
+### Conclusión
