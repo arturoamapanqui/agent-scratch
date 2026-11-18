@@ -780,3 +780,34 @@ npm notice run 'inspector' --cli --server-url http://127.0.0.1:8200/mcp --transp
 ### Conclusión
 
 El agente usando MCP cuando tenemos conexion al servidor solo tenemos acceso a nuestro dominio.
+
+## Sesión 7 — Skills, memoria de trabajo y Agent Framework
+
+Dominio: `support`. La misma conversación con los dos runtimes (paso 7).
+
+|                                            | `react`                             | `agent_framework`                                                                                                                                                    |
+| ------------------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tools pedidas en la consulta               | _(find_branches)_                   | _(find_branches(district=Miraflores, service=None)_                                                                                                                  |
+| La acción sensible quedó **NO SE EJECUTA** | _( )_                               | _( )_                                                                                                                                                                |
+| Pregunta de memoria respondida sin `→`     | _district=Miraflores, service=None_ | _({"result": [{"id": "BRN-02", "name": "Agencia Miraflores", "district": "Miraflores", "address": "Calle Ficticia 456", "hours": "L-V 9:00-18:00", "services": ["c)_ |
+| Primer texto (ms)                          | _(9653)_                            | _(4938)_                                                                                                                                                             |
+| Respuesta completa (ms)                    | _(23477)_                           | _(16595)_                                                                                                                                                            |
+| Tokens (entrada / salida)                  | _(2946/1109)_                       | _(3342/1557)_                                                                                                                                                        |
+
+### ¿La skill frenó la tool de otro dominio?
+
+Mensaje: _(Actualiza el correo o el teléfono del cliente)_. Respuesta:
+
+Agente [sensitive_action]: Para proceder necesito que me indiques: 1) el código de cliente (ej. CUS-1001) y 2) qué quieres cambiar (correo o teléfono) y el nuevo valor exacto. Yo te repetiré el dato para que lo confirmes antes de ejecutar la solicitud. Importante: el cambio requiere confirmación mediante un código enviado al dato anterior; si el cliente ya no tiene acceso al dato anterior debe acercarse a una agencia. La modificación quedará pendiente de aprobación de un asesor. ¿Me das el CUS y el nuevo correo/teléfono?
+Fuentes:
+[1] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+[2] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+[3] service-cases.pdf · Casos de atención (datos ficticios) > 2. Sin acceso al correo anterior
+
+### Diferencias entre los dos runtimes
+
+Por el lado de react el uso de las tools es mas sencilla, a diferencia del otro runtime que tiene mas detalle las tools
+
+### Conclusión
+
+Las tools cambian y se activan por el dominio del MCP.
