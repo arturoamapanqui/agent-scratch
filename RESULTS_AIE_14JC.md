@@ -796,10 +796,18 @@ Dominio: `support`. La misma conversación con los dos runtimes (paso 7).
 
 ### ¿La skill frenó la tool de otro dominio?
 
-Mensaje: _(anotar)_. Respuesta: _(anotar)_.
+Mensaje: _(Actualiza el correo o el teléfono del cliente)_. Respuesta:
+
+Agente [sensitive_action]: Para proceder necesito que me indiques: 1) el código de cliente (ej. CUS-1001) y 2) qué quieres cambiar (correo o teléfono) y el nuevo valor exacto. Yo te repetiré el dato para que lo confirmes antes de ejecutar la solicitud. Importante: el cambio requiere confirmación mediante un código enviado al dato anterior; si el cliente ya no tiene acceso al dato anterior debe acercarse a una agencia. La modificación quedará pendiente de aprobación de un asesor. ¿Me das el CUS y el nuevo correo/teléfono?
+Fuentes:
+[1] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+[2] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+[3] service-cases.pdf · Casos de atención (datos ficticios) > 2. Sin acceso al correo anterior
 
 ### Diferencias entre los dos runtimes
 
-_(anotar)_
+Por el lado de react el uso de las tools es mas sencilla, a diferencia del otro runtime que tiene mas detalle las tools
 
 ### Conclusión
+
+Las tools cambian y se activan por el dominio del MCP.
