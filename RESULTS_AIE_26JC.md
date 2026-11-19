@@ -119,3 +119,50 @@ Lo único sin respaldo está en la consulta de Miraflores: al final ofreció "¿
 - **Elige bien la tool:** `find_branches` para la consulta de agencias. Además combina el resultado de la tool con el RAG (el horario de los sábados).
 - **Las acciones sensibles no se ejecutan solas:** `update_contact_details` queda en `pendiente_aprobacion` y el agente se lo comunica bien al cliente.
 - **Sin tool, no inventa datos:** responde `out_of_scope` y deriva.
+
+## Sesión 7 — Skills, memoria de trabajo y Agent Framework
+
+Dominio: `support`. La misma conversación con los dos runtimes (paso 7).
+
+| | `react` | `agent_framework` |
+|---|---|---|
+| Tools pedidas en la consulta | `find_branches(district=Miraflores)` → BRN-02 | `find_branches(district=Miraflores)` → BRN-02 |
+| La acción sensible quedó **NO SE EJECUTA** | No llegó a llamar `update_contact_details`: repitió el dato, pidió confirmación y explicó la validación por código y la aprobación del asesor | Igual: no llamó `update_contact_details`; pidió confirmación explícita antes de iniciar la solicitud |
+| Pregunta de memoria respondida sin `→` | Sí: "Calle Ficticia 456", sin llamar tools | Sí: "Calle Ficticia 456", sin llamar tools |
+| Primer texto (ms) | 12873 / 11710 / 12276 | 16457 / 15567 / 13403 |
+| Respuesta completa (ms) | 13024 / 11979 / 12306 | 16600 / 15725 / 13406 |
+| Tokens (entrada / salida) | 3293/843 · 2164/1049 · 2369/1048 | 2542/620 · 1776/1297 · 1963/1046 |
+
+Los tiempos y tokens van por turno: consulta / acción sensible / pregunta de memoria.
+
+### ¿La skill frenó la tool de otro dominio?
+
+Mensaje: "Soy CUS-1001, ¿qué comisiones me cobraron?" (pide `get_charged_fees`, una tool del dominio `fees` que la skill `support` no ofrece).
+
+Respuesta: **sí, la frenó en los dos runtimes.** Ninguno intentó llamar una tool (no hay `→`), los dos reconocieron que no pueden consultar comisiones "con las herramientas disponibles aquí" y derivaron a la app, al estado de cuenta o a una agencia. Además ofrecieron lo que sí está en la skill: buscar la agencia más cercana.
+
+| | `react` | `agent_framework` |
+|---|---|---|
+| Intención | `data_query` | `data_query` |
+| Tool llamada | ninguna | ninguna |
+| Primer texto / completa (ms) | 16033 / 16322 | 9515 / 9814 |
+| Tokens (entrada / salida) | 1195 / 1028 | 1195 / 692 |
+
+Los dos la clasificaron como `data_query` y no como `out_of_scope`. No es grave porque no inventaron datos, pero el enrutamiento podría afinarse.
+
+### Diferencias entre los dos runtimes
+
+En lo funcional se comportaron igual: misma tool con los mismos argumentos, ninguno ejecutó la acción sensible sin confirmación, los dos citaron las mismas fuentes del RAG y los dos respondieron la pregunta de memoria sin volver a llamar `find_branches`.
+
+Las diferencias están en el rendimiento y en el tono:
+
+- **Latencia:** `react` fue más rápido en los tres turnos (≈12–13 s frente a ≈13–16,5 s). La mayor brecha está en el primer turno, el que usa la tool (12,9 s frente a 16,5 s).
+- **Tokens de entrada:** `agent_framework` usó menos en los tres turnos (≈2 000 frente a ≈2 600 de media), es decir, manda un contexto más corto al modelo.
+- **Tokens de salida:** parecidos en total (2 940 frente a 2 963); `agent_framework` gastó más en la acción sensible (1 297) y menos en la consulta (620).
+- **Tono:** `react` tutea ("¿Quieres indicaciones…?") y siempre cierra con una pregunta de seguimiento; `agent_framework` trata de usted ("Confirme por favor…") y en la pregunta de memoria respondió solo el dato, sin ofrecer nada más.
+
+### Conclusión
+
+Cambiar de runtime no cambió el comportamiento del agente. La skill `support` acota las tools que ve el modelo, y por eso ninguno de los dos intentó consultar comisiones. La acción sensible no se ejecutó sin confirmación en ninguno de los dos, y la memoria de trabajo permitió responder la dirección de la agencia sin repetir la tool. Esto pasa porque esas reglas viven en la capa de aplicación (skill, memoria, aprobación) y no en el runtime.
+
+En la conversación principal, `react` respondió más rápido y `agent_framework` usó menos tokens de entrada. En la prueba de la skill fue al revés: `agent_framework` fue más rápido y generó menos salida.
