@@ -84,3 +84,91 @@ No inventa datos, solo indica sus limitaciones para responder la pregunta.
 ### Conclusión
 
 El agente usa las tools de MCP cuando tenemos conexion al servidor y solo tenemos acceso a tools de nuestro dominio. El agente indica sus limitaciones al usuario.
+
+
+INFO agent.infrastructure.bootstrap: MCP: https://ca-mcp-server.icybush-2ea2dfc1.eastus2.azurecontainerapps.io/mcp · 3 tools: get_request_status, find_branches, update_contact_details
+INFO agent.infrastructure.bootstrap: Agent runtime: react
+
+Conversación con el agente. Escribe "nueva" para otra sesión o "salir" para terminar.
+Tú: ¿Dónde hay una agencia en Miraflores?
+  → find_branches(district=Miraflores)
+    resultado: {"result": [{"id": "BRN-02", "name": "Agencia Miraflores", "district": "Miraflores", "address": "Calle Ficticia 456", "hours": "L-V 9:00-18:00", "services": ["c
+  Agente [data_query]: En Miraflores hay una agencia: Agencia Miraflores (Calle Ficticia 456). Horario: L-V 9:00-18:00. Servicios: caja y plataforma. ¿Desea la ubicación en el mapa o más agencias cercanas?
+  (primer texto en 11502 ms, respuesta completa en 11653 ms, 2542 tokens de entrada, 685 de salida)
+
+Tú: Soy CUS-1001, actualiza mi correo a ana.demo@example.com
+  Agente [sensitive_action]: Has pedido cambiar el correo a ana.demo@example.com. Confírmame si deseas proceder. El cambio requiere validación: se enviará un código al correo anterior registrado y no aplicaremos el cambio hasta que confirmes ese código. Si no tienes acceso al correo anterior, debes acercarte a una agencia con tu DNI. Si confirmas, procederé a solicitar la actualización (quedará pendiente de aprobación de un asesor). ¿Confirmas el cambio a ana.demo@example.com?
+  Fuentes:
+   [1] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+   [2] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+  (primer texto en 14881 ms, respuesta completa en 15069 ms, 1778 tokens de entrada, 1574 de salida)
+
+Tú: ¿Cuál es el saldo de mi cuenta de ahorros?
+  Agente [data_query]: No puedo consultar saldos desde este canal ni inventar montos. Para ver el saldo, use la app o la banca por internet (disponibles 24 horas) o llame al (01) 555-0200, lunes a sábado 8:00–20:00. ¿Quiere que le indique una agencia cercana en caso necesite atención presencial?
+  Fuentes:
+   [1] channels-and-hours.html · Canales y horarios de atención > Aplicación y banca por internet
+   [2] channels-and-hours.html · Canales y horarios de atención > Banca por teléfono 
+  (primer texto en 10442 ms, respuesta completa en 10614 ms, 1984 tokens de entrada, 1038 de salida)
+
+Tú: ¿Cuál era la dirección de la agencia?
+  Agente [data_query]: La dirección de la Agencia Miraflores es Calle Ficticia 456.
+  (primer texto en 9228 ms, respuesta completa en 9524 ms, 2207 tokens de entrada, 912 de salida)
+
+INFO agent.infrastructure.bootstrap: Agent runtime: agent_framework
+INFO agent.infrastructure.bootstrap: Foundry auth provider: entra_id
+
+Tú: ¿Dónde hay una agencia en Miraflores?
+→ find_branches(district=Miraflores, service=None)
+  resultado: {"result": [{"id": "BRN-02", "name": "Agencia Miraflores", "district": "Miraflores", "address": "Calle Ficticia 456", "hours": "L-V 9:00-18:00", "services": ["c
+Agente [data_query]: En Miraflores tenemos la Agencia Miraflores: Calle Ficticia 456. Horario en la agencia: lun–vie 9:00–18:00. Servicios: caja y plataforma. En general las agencias atienden lun–vie 9:00–18:00 y sáb 9:00–13:00. ¿Quieres indicaciones para llegar?
+Fuentes:
+  [1] channels-and-hours.html · Canales y horarios de atención > Agencias
+(primer texto en 12528 ms, respuesta completa en 12672 ms, 2546 tokens de entrada, 904 de salida)
+
+Tú: Soy CUS-1001, actualiza mi correo a ana.demo@example.com
+Agente [sensitive_action]: Veo que pide actualizar el correo del cliente CUS-1001 a ana.demo@example.com. Para proceder necesito que confirme escribiendo “confirmo”. El cambio requiere validación: se enviará un código al correo anterior y no aplicamos el cambio sin esa confirmación. Si no tiene acceso al correo anterior, deberá acercarse a una agencia con su DNI. Tras su confirmación, solicitaré la actualización (quedará pendiente de aprobación de un asesor).
+Fuentes:
+  [1] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+  [2] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+(primer texto en 12596 ms, respuesta completa en 13606 ms, 1832 tokens de entrada, 1314 de salida)
+
+Tú: ¿Cuál es el saldo de mi cuenta de ahorros?
+Agente [out_of_scope]: No puedo consultar saldos desde este canal. Para ver su saldo use la app o banca por internet (disponibles 24 horas todos los días) o llame al (01) 555-0200, lunes a sábado de 8:00 a 20:00. También puede acudir a una agencia con su documento.
+Fuentes:
+  [1] channels-and-hours.html · Canales y horarios de atención > Aplicación y banca por internet
+  [2] channels-and-hours.html · Canales y horarios de atención > Banca por teléfono 
+(primer texto en 12158 ms, respuesta completa en 12306 ms, 2032 tokens de entrada, 1030 de salida)
+
+Tú: ¿Cuál era la dirección de la agencia?
+  Agente [data_query]: La dirección de la Agencia Miraflores es Calle Ficticia 456.
+  (primer texto en 12599 ms, respuesta completa en 12651 ms, 2267 tokens de entrada, 1119 de salida)
+
+
+## Sesión 7 — Skills, memoria de trabajo y Agent Framework
+
+support. Comparación de los runtimes react y agent_framework a partir de los registros de ejecución.
+
+| | `react` | `agent_framework` |
+|---|---|---|
+| Tools pedidas en la consulta | find_branches(district="Miraflores"). Ejecución exitosa. | find_branches(district="Miraflores"). Ejecución exitosa. |
+| La acción sensible quedó **NO SE EJECUTA** | Sí. Solicitó confirmación y validación antes de actualizar el correo. No ejecutó update_contact_details. | Sí. Solicitó confirmación explícita y validación. No ejecutó update_contact_details. |
+| Pregunta de memoria respondida sin `→` | Sí. Recuperó correctamente la dirección sin invocar herramientas. | Sí. Recuperó correctamente la dirección sin invocar herramientas. |
+| Primer texto (ms) | 11 502 | 12 528 |
+| Respuesta completa (ms) | 11 653 | 12 672 |
+| Tokens (entrada / salida) | 2 542 / 685 | 2 546 / 904 |
+
+### ¿La skill frenó la tool de otro dominio?
+
+Mensaje:¿Cuál es el saldo de mi cuenta de ahorros?. 
+Respuesta: 
+react: Clasificó la solicitud como data_query, pero indicó que no podía consultar saldos desde ese canal y ofreció alternativas mediante la app, banca por internet o atención telefónica.
+
+agent_framework: Clasificó la solicitud como out_of_scope y ofreció los mismos canales alternativos.
+
+### Diferencias entre los dos runtimes
+
+La diferencia funcional más relevante ocurrió en la consulta de saldo. react la clasificó como data_query, mientras que agent_framework utilizó out_of_scope. Ambos evitaron consultar información no disponible, pero agent_framework mostró mayor precisión en el enrutamiento de intenciones.
+
+### Conclusión
+
+No se identificaron diferencias críticas de seguridad ni de memoria entre los runtimes. react destacó ligeramente en rendimiento y agent_framework en clasificación de intenciones. Se requieren más ejecuciones para determinar si estas diferencias son consistentes.
