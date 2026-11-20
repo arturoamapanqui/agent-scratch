@@ -172,3 +172,95 @@ La diferencia funcional más relevante ocurrió en la consulta de saldo. react l
 ### Conclusión
 
 No se identificaron diferencias críticas de seguridad ni de memoria entre los runtimes. react destacó ligeramente en rendimiento y agent_framework en clasificación de intenciones. Se requieren más ejecuciones para determinar si estas diferencias son consistentes.
+
+
+INFO agent.infrastructure.bootstrap: MCP: https://ca-mcp-server.icybush-2ea2dfc1.eastus2.azurecontainerapps.io/mcp · 3 tools: get_request_status, find_branches, update_contact_details
+INFO agent.infrastructure.bootstrap: Agent runtime: agent_framework
+
+Tú:     Soy CUS-1001, actualiza mi correo a ana.demo@example.com
+  Agente [sensitive_action]: ¿Confirma que desea actualizar el correo de CUS-1001 a ana.demo@example.com? Si confirma, procederé a solicitar el cambio. Atención: el banco validará el cambio con un código enviado al correo anterior y no puedo aplicar el cambio sin esa confirmación. Si ya no tiene acceso al correo anterior, deberá acercarse a una agencia con su DNI. Tras la confirmación, la actualización quedará pendiente de aprobación de un asesor.
+  Fuentes:
+   [1] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+   [2] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+  (primer texto en 13591 ms, respuesta completa en 13761 ms, 1236 tokens de entrada, 1079 de salida)
+
+Tú: Sí, confírmalo
+  → update_contact_details(customer_id=CUS-1001, email=ana.demo@example.com)
+    NO SE EJECUTA, pendiente de aprobación: {"status": "pendiente_aprobacion", "action_id": "call-3206e794", "detail": "Acción sensible: no se ejecutó ni se registró todavía. Dile al cliente que la pedist
+  Agente [sensitive_action]: He solicitado la actualización del correo de CUS-1001 a ana.demo@example.com. La petición quedó pendiente de aprobación por un asesor; en breve la revisarán. El banco validará el cambio enviando un código al correo anterior y no podemos completar el cambio sin esa confirmación. Si no tiene acceso al correo anterior, debe acudir a una agencia con su DNI. Le avisaré cuando el asesor apruebe el cambio.
+  Fuentes:
+   [1] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+   [2] request-status.html · Estado de solicitudes > Plazos de referencia
+  (primer texto en 17395 ms, respuesta completa en 17586 ms, 3046 tokens de entrada, 1469 de salida)
+  Asesor: ¿apruebas update_contact_details(customer_id=CUS-1001, email=ana.demo@example.com)? [s/n]: s
+    resultado: {"id": "CUS-1001", "full_name": "Lucía Quispe Ramos", "document_masked": "****4821", "email": "ana.demo@example.com", "phone": "+51 900 100 101", "segment": "pe
+  Agente [sensitive_action]: La solicitud de actualización del correo de CUS-1001 a ana.demo@example.com fue registrada y queda para que el banco la procese. El registro asociado muestra: Lucía Quispe Ramos, documento ****4821 y correo ana.demo@example.com.
+
+INFO agent.application.chat_service: trayectoria 3356469e-b1fd-4950-92cd-453fa11675e5: update_contact_details pending_approval → respuesta sensitive_action
+
+INFO agent.application.chat_service: trayectoria 3356469e-b1fd-4950-92cd-453fa11675e5: decisión del asesor → update_contact_details ok
+
+INFO agent.infrastructure.bootstrap: MCP: https://ca-mcp-server.icybush-2ea2dfc1.eastus2.azurecontainerapps.io/mcp · 3 tools: get_request_status, find_branches, update_contact_details
+INFO agent.infrastructure.bootstrap: Agent runtime: react
+
+Tú: Soy CUS-1001, actualiza mi correo a ana.demo@example.com
+  Agente [sensitive_action]: Confirmo recepción de la solicitud para cambiar su correo a ana.demo@example.com. Antes de aplicar el cambio se requiere verificación: enviaremos un código al correo anterior para confirmar. Si ya no tiene acceso al correo anterior, deberá acudir a una agencia con su DNI. ¿Confirma que proceda a solicitar la actualización a ana.demo@example.com? (Responda “Confirmo” para continuar.)
+  Fuentes:
+   [1] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+   [2] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+  (primer texto en 10494 ms, respuesta completa en 10695 ms, 1236 tokens de entrada, 878 de salida)
+Tú: Sí, confírmalo
+  → update_contact_details(customer_id=CUS-1001, email=ana.demo@example.com)
+    NO SE EJECUTA, pendiente de aprobación: {"status": "pendiente_aprobacion", "action_id": "call_zfxaDhisOpUPz6E4HifS9IoC", "detail": "Acción sensible: no se ejecutó ni se registró todavía. Dile al clien
+  Agente [sensitive_action]: He solicitado la actualización de su correo a ana.demo@example.com. La solicitud quedó pendiente de aprobación por un asesor; un asesor la revisará y le contactará cuando esté aprobada. Tenga en cuenta que el cambio se valida con un código enviado al correo anterior; si no tiene acceso al correo anterior, deberá acudir a una agencia con su DNI.
+  Fuentes:
+   [1] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+   [2] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+  (primer texto en 23201 ms, respuesta completa en 23363 ms, 3042 tokens de entrada, 2538 de salida)
+  Asesor: ¿apruebas update_contact_details(customer_id=CUS-1001, email=ana.demo@example.com)? [s/n]: n
+    rechazada por el asesor: {"status": "rechazada", "detail": "El asesor rechazó la acción: no se ejecutó."}
+  Agente [sensitive_action]: Su solicitud de cambio de correo a ana.demo@example.com fue rechazada por el asesor; la acción no se ejecutó.
+
+Tú: Soy CUS-9999, actualiza mi correo a ana.demo@example.com
+  Agente [sensitive_action]: He recibido la solicitud para actualizar el correo del cliente CUS-9999 a ana.demo@example.com. Antes de ejecutar el cambio necesito su confirmación. El cambio se valida con un código enviado al correo anterior; si no tiene acceso a ese correo deberá acudir a una agencia con su DNI. Si confirma, responda “Confirmo” y solicitaré la actualización para que un asesor la revise.
+  Fuentes:
+   [1] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar
+   [2] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida
+  (primer texto en 9326 ms, respuesta completa en 9496 ms, 2272 tokens de entrada, 853 de salida)
+
+Tú: Mi número de cliente es 1001, ¿qué comisiones me cobraron?
+  Agente [data_query]: No puedo consultar las comisiones cobradas con las herramientas disponibles aquí. Para verlas puede: 1) revisar el detalle de movimientos o el estado de cuenta en la app o banca por Internet; 2) acudir a una agencia con su DNI para que revisen los cargos; o 3) contactar la línea de atención (el número está en nuestra web o en la app). Si desea, indíqueme su código completo de cliente (por ejemplo CUS-1001) y le confirmo qué gestiones puedo hacer por este canal.
+  (primer texto en 14223 ms, respuesta completa en 14473 ms, 2458 tokens de entrada, 1513 de salida)
+
+## Sesión 8 — Aprobación humana, validación y reintentos
+
+**Dominio:** `support` (paso 6).
+
+| Caso | Runtime | Mensaje | Qué pasó | Resultado o ID |
+|---|---|---|---|---|
+| Aprobar | `agent_framework` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" → "Sí, confírmalo" | El agente solicitó confirmación antes de invocar `update_contact_details`. La herramienta quedó en `pending_approval` sin ejecutarse. El asesor aprobó (`s`) y la herramienta se ejecutó correctamente, devolviendo los datos del cliente con el correo actualizado. | `call-3206e794` → `pending_approval` → `ok`. |
+| Rechazar | `react` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" → "Sí, confírmalo" | El agente solicitó confirmación e invocó la herramienta, que quedó pendiente de aprobación. El asesor rechazó (`n`). La operación no se ejecutó y el agente comunicó el rechazo. | `call_zfxaDhisOpUPz6E4HifS9IoC` → `pending_approval` → `rechazada`. |
+| Error de negocio (`CUS-9999`) | `react` | "Soy CUS-9999, actualiza mi correo a ana.demo@example.com" | El agente solicitó confirmación y explicó el proceso de validación, pero no llegó a invocar la herramienta. Por tanto, no se comprobó el manejo de un error de negocio por cliente inexistente. | Sin ejecución ni ID. Error de negocio no verificado. |
+| Input inválido | `react` | "Mi número de cliente es 1001, ¿qué comisiones me cobraron?" | El agente clasificó la solicitud como `data_query`, reconoció que no disponía de herramientas para consultar comisiones y ofreció alternativas. Solicitó el código completo del cliente (`CUS-1001`). No se ejecutaron herramientas ni se probó una validación formal de parámetros inválidos. | Respuesta controlada, sin ejecución. Validación de input no verificada. |
+
+### La trayectoria en el log
+
+```text
+INFO agent.application.chat_service: trayectoria 3356469e-b1fd-4950-92cd-453fa11675e5: update_contact_details pending_approval → respuesta sensitive_action
+
+INFO agent.application.chat_service: trayectoria 3356469e-b1fd-4950-92cd-453fa11675e5: decisión del asesor → update_contact_details ok
+```
+
+### ¿Algo se ejecutó sin que lo aprobaras?
+
+**No.** En las pruebas observadas, ambos runtimes respetaron la aprobación humana para la operación sensible `update_contact_details`.
+
+- `agent_framework`: la ejecución quedó bloqueada hasta recibir la aprobación del asesor (`s`).
+- `react`: el rechazo del asesor (`n`) impidió la ejecución.
+- No se observaron ejecuciones de herramientas en los casos de `CUS-9999` ni de entrada con identificador incompleto.
+
+### Conclusión
+
+**Ambos runtimes demostraron un funcionamiento correcto del mecanismo de aprobación humana (Human-in-the-Loop)** para acciones sensibles. `agent_framework` ejecutó la operación después de la autorización y `react` bloqueó correctamente la ejecución ante el rechazo.
+
+La principal diferencia observada estuvo en la comunicación y el comportamiento del agente, no en la seguridad del mecanismo de aprobación.
