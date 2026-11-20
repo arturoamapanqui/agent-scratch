@@ -812,3 +812,59 @@ En la consulta de saldo, `react` clasificó la intención como `data_query` y `a
 ### Conclusión
 
 No se observaron diferencias críticas de seguridad ni de memoria. `react` mostró una ligera ventaja en rendimiento y `agent_framework` en clasificación de intenciones. Se necesitan más ejecuciones para confirmar estas tendencias.
+
+## Sesión 8 — Aprobación humana, validación y reintentos
+
+Dominio: `support` (paso 6).
+
+| Caso                          | Runtime           | Mensaje                                                       | Qué pasó                                                                                                                                                                                             | Resultado o ID                     |
+| ----------------------------- | ----------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| Aprobar                       | `agent_framework` | "Soy CUS-1001, actualiza mi correo a carlos.test@example.com" | Se solicitó confirmación y se invocó `update_contact_details` con `customer_id=CUS-1001`, `email=carlos.test@example.com` y `phone=None`. Quedó en `pendiente_aprobacion`. El asesor aprobó con `s`. | `CUS-1001`, acción `call-b72fc913` |
+| Rechazar                      | `react`           | "Soy CUS-1001, actualiza mi correo a carlos.test@example.com" | Se generó la solicitud en `pendiente_aprobacion`. El asesor respondió `n` y se rechazó sin modificar los datos.                                                                                      | `CUS-1001`, acción `call-k84mp207` |
+| Error de negocio (`CUS-9999`) | `react`           | "Soy CUS-9999, actualiza mi correo a carlos.test@example.com" | Se simuló un cliente inexistente. La validación impidió completar la actualización.                                                                                                                  | Sin actualización                  |
+| Input inválido                | `agent_framework` | "Soy 1001, actualiza mi correo a carlos.test@example.com"     | Se detectó un formato incorrecto y se solicitó confirmar `CUS-1001`. No se ejecutaron tools.                                                                                                         | Sin ejecución                      |
+
+### La trayectoria en el log
+
+**Aprobación:**
+
+```text
+INFO agent.application.chat_service: trayectoria 7b3a2f40-16dc-4f92-9a31-87fe9c452d10: update_contact_details pending_approval → respuesta sensitive_action
+INFO agent.application.chat_service: trayectoria 7b3a2f40-16dc-4f92-9a31-87fe9c452d10: decisión del asesor → update_contact_details ok
+```
+
+**Rechazo:**
+
+```text
+INFO agent.application.chat_service: trayectoria 91e4a63c-5b27-4dd8-a143-07c2f38b6e95: update_contact_details pending_approval → respuesta sensitive_action
+INFO agent.application.chat_service: trayectoria 91e4a63c-5b27-4dd8-a143-07c2f38b6e95: decisión del asesor → update_contact_details rejected
+```
+
+**Error de negocio:**
+
+```text
+INFO agent.application.chat_service: trayectoria 52d19e8b-78a4-4a93-8e10-b7f405c21d63: update_contact_details → customer_not_found
+```
+
+**Input inválido:**
+
+```text
+INFO agent.application.chat_service: trayectoria c28a7b15-90e3-4b6f-9d42-1fa6e7038c29: sin tools → respuesta sensitive_action
+```
+
+### ¿Algo se ejecutó sin que lo aprobaras?
+
+No. En la simulación, `update_contact_details` permaneció en `pendiente_aprobacion` hasta recibir la decisión del asesor.
+
+- Con `s`, la acción pasó a `ok` y se actualizó `email=carlos.test@example.com`.
+- Con `n`, pasó a `rejected` y no se modificó el registro.
+- Para `CUS-9999`, se simuló `customer_not_found`, sin actualización.
+- Con el input `1001`, el agente solicitó validar el identificador antes de continuar.
+
+### Conclusión
+
+- **Aprobación:** `pending_approval → ok`. Cambio ejecutado tras autorización.
+- **Rechazo:** `pending_approval → rejected`. Sin modificaciones.
+- **Error de negocio:** `CUS-9999` no encontrado; operación detenida.
+- **Input inválido:** `1001` no cumplió el formato `CUS-1234`.
+- **Seguridad:** las acciones sensibles requieren aprobación humana antes de ejecutarse.
