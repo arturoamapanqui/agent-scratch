@@ -166,3 +166,115 @@ Las diferencias están en el rendimiento y en el tono:
 Cambiar de runtime no cambió el comportamiento del agente. La skill `support` acota las tools que ve el modelo, y por eso ninguno de los dos intentó consultar comisiones. La acción sensible no se ejecutó sin confirmación en ninguno de los dos, y la memoria de trabajo permitió responder la dirección de la agencia sin repetir la tool. Esto pasa porque esas reglas viven en la capa de aplicación (skill, memoria, aprobación) y no en el runtime.
 
 En la conversación principal, `react` respondió más rápido y `agent_framework` usó menos tokens de entrada. En la prueba de la skill fue al revés: `agent_framework` fue más rápido y generó menos salida.
+
+## Sesión 8 — Aprobación humana, validación y reintentos
+
+Dominio: `support` (paso 6).
+
+| Caso | Runtime | Mensaje | Qué pasó | Resultado o ID |
+|---|---|---|---|---|
+| Aprobar | `agent_framework` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" | El agente pidió confirmación explícita; al responder "Sí, confírmalo", llamó `update_contact_details` con `customer_id=CUS-1001`, `email=ana.demo@example.com` y `phone=None`. La tool dejó la acción en `pendiente_aprobacion` y no la ejecutó. El asesor respondió `s`; la misma solicitud se ejecutó y el correo del cliente quedó actualizado. | `CUS-1001`, acción `call-e8afad85` |
+| Rechazar | `react` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" | El agente pidió confirmación explícita; al responder "Sí, confírmalo", llamó `update_contact_details` con `customer_id=CUS-1001`, `email=ana.demo@example.com` y `phone=None`. La tool dejó la acción en `pendiente_aprobacion` y no la ejecutó. El asesor respondió `n`; la solicitud quedó rechazada y el correo no se modificó. | `CUS-1001`, acción `call_zJ3koasJ6wdN3kBWnu0ed3o9` |
+| Error de negocio (`CUS-ABCD`) | `react` | "Soy CUS-ABCD, actualiza mi correo a ana.demo@example.com" | El agente pidió confirmación explícita; al responder "Sí, confírmalo", detectó que `CUS-ABCD` no cumple el formato esperado y no llamó ninguna tool. Respondió que debía enviar un código válido con el formato `CUS-1234`. | Sin ejecución ni acción registrada |
+| Input inválido | `agent_framework` | "Soy 1001, actualiza mi correo a ana.demo@example.com" | El agente detectó que `1001` no usa el formato esperado `CUS-1001`. Repitió el correo solicitado y pidió confirmar si el código correcto era `CUS-1001`. No llamó ninguna tool ni creó una solicitud pendiente. | Sin ejecución ni acción registrada |
+
+### La trayectoria en el log
+
+Para el caso aprobado, Terminal 1 registró esta trayectoria:
+
+```text
+INFO agent.application.chat_service: trayectoria 3f2d36fe-c54d-45bf-9986-5948ec15e936: update_contact_details pending_approval → respuesta sensitive_action
+INFO agent.application.chat_service: trayectoria 3f2d36fe-c54d-45bf-9986-5948ec15e936: decisión del asesor → update_contact_details ok
+```
+
+Para el caso rechazado, Terminal 1 registró:
+
+```text
+INFO agent.application.chat_service: trayectoria 293537e2-29ca-451e-8218-f77263247ae0: update_contact_details pending_approval → respuesta sensitive_action
+INFO agent.application.chat_service: trayectoria 293537e2-29ca-451e-8218-f77263247ae0: decisión del asesor → update_contact_details rejected
+```
+
+Para el código de cliente inválido, Terminal 1 registró:
+
+```text
+INFO agent.application.chat_service: trayectoria 293537e2-29ca-451e-8218-f77263247ae0: sin tools → respuesta sensitive_action
+```
+
+Para el formato de cliente inválido, Terminal 1 registró:
+
+```text
+INFO agent.application.chat_service: trayectoria 8ecb32c4-227a-4068-a6fb-46965b5bbd14: sin tools → respuesta sensitive_action
+```
+
+Terminal 2 mostró estos tiempos relevantes:
+
+- Caso aprobado, primer turno: primer texto en `15024 ms` y respuesta completa en `15199 ms`, con `1236` tokens de entrada y `890` de salida.
+- Caso aprobado, segundo turno: primer texto en `20344 ms` y respuesta completa en `21118 ms`, con `3059` tokens de entrada y `2162` de salida.
+- Caso rechazado, primer turno: primer texto en `10493 ms` y respuesta completa en `10702 ms`, con `1236` tokens de entrada y `550` de salida.
+- Caso rechazado, segundo turno: primer texto en `17447 ms` y respuesta completa en `17613 ms`, con `3023` tokens de entrada y `1688` de salida.
+- Caso con código inválido `CUS-ABCD`, primer turno: primer texto en `11544 ms` y respuesta completa en `11796 ms`, con `2498` tokens de entrada y `1033` de salida.
+- Caso con código inválido `CUS-ABCD`, segundo turno: primer texto en `15729 ms` y respuesta completa en `16728 ms`, con `2698` tokens de entrada y `1746` de salida.
+- Caso con formato inválido `1001`: primer texto en `16126 ms` y respuesta completa en `16279 ms`, con `1234` tokens de entrada y `1305` de salida.
+
+### ¿Algo se ejecutó sin que lo aprobaras?
+
+No. Antes de la aprobación, `update_contact_details` respondió:
+
+```json
+{"status":"pendiente_aprobacion","action_id":"call-e8afad85","detail":"Acción sensible: no se ejecutó ni se registró todavía."}
+```
+
+El asesor aprobó con `s` y solo entonces la tool devolvió el registro actualizado de `CUS-1001`, con `email=ana.demo@example.com`.
+
+En el caso rechazado, la tool también dejó primero la solicitud en `pendiente_aprobacion`:
+
+```json
+{"status":"pendiente_aprobacion","action_id":"call_zJ3koasJ6wdN3kBWnu0ed3o9","detail":"Acción sensible: no se ejecutó ni se registró todavía."}
+```
+
+Al responder el asesor con `n`, recibió y registró el rechazo:
+
+```json
+{"status":"rechazada","detail":"El asesor rechazó la acción: no se ejecutó."}
+```
+
+El agente informó al cliente que la solicitud fue rechazada y que no se ejecutó.
+
+En el caso de `CUS-ABCD`, no se registró ni ejecutó ninguna acción sensible:
+
+- El agente pidió inicialmente confirmar el cambio.
+- Tras recibir la confirmación, rechazó continuar porque el código no tenía el formato válido `CUS-1234`.
+- No llamó `update_contact_details` ni quedó una solicitud pendiente de aprobación.
+- Informó al cliente que debía enviar el código correcto y reiteró la validación con el correo anterior.
+
+### Conclusión
+
+En el caso de aprobación, el flujo protegió correctamente la acción sensible:
+
+- El agente explicó que el cambio requería confirmación y que se enviaría un código al correo anterior.
+- La solicitud quedó pendiente de aprobación y no llegó a aplicarse de inmediato.
+- La decisión humana fue registrada en la trayectoria y cambió el estado a `ok`.
+- Tras aprobar, el sistema realizó el cambio y confirmó el nuevo correo en el registro.
+- El agente citó `contact-details-update.docx` y, al informar el estado, también `request-status.html`.
+
+En el caso de rechazo, el flujo también quedó protegido:
+
+- La confirmación del cliente inició una solicitud pendiente, pero no modificó el registro.
+- El asesor rechazó explícitamente la acción con `n`.
+- La trayectoria pasó de `pending_approval` a `rejected`.
+- El agente informó el rechazo con claridad y afirmó que no se ejecutó.
+
+En el caso de entrada inválida `CUS-ABCD`, el agente aplicó una validación previa:
+
+- Detectó que el identificador no usa el formato esperado.
+- No llamó la tool ni creó una solicitud pendiente.
+- La trayectoria quedó registrada como `sin tools → respuesta sensitive_action`.
+- Indicó al cliente el formato correcto (`CUS-1234`) y mantuvo la explicación sobre el código enviado al correo anterior.
+
+En el caso de formato incompleto `1001`, el agente también evitó ejecutar la acción:
+
+- Reconoció el correo válido indicado por el cliente.
+- Detectó que el identificador proporcionado debía convertirse o confirmarse como `CUS-1001`.
+- No llamó `update_contact_details` ni registró una solicitud pendiente.
+- La trayectoria quedó registrada como `sin tools → respuesta sensitive_action`.
+- Solicitó al cliente que confirmara explícitamente el código completo antes de continuar.
