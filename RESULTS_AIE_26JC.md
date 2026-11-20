@@ -175,7 +175,7 @@ Dominio: `support` (paso 6).
 |---|---|---|---|---|
 | Aprobar | `agent_framework` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" | El agente pidió confirmación explícita; al responder "Sí, confírmalo", llamó `update_contact_details` con `customer_id=CUS-1001`, `email=ana.demo@example.com` y `phone=None`. La tool dejó la acción en `pendiente_aprobacion` y no la ejecutó. El asesor respondió `s`; la misma solicitud se ejecutó y el correo del cliente quedó actualizado. | `CUS-1001`, acción `call-e8afad85` |
 | Rechazar | `react` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" | El agente pidió confirmación explícita; al responder "Sí, confírmalo", llamó `update_contact_details` con `customer_id=CUS-1001`, `email=ana.demo@example.com` y `phone=None`. La tool dejó la acción en `pendiente_aprobacion` y no la ejecutó. El asesor respondió `n`; la solicitud quedó rechazada y el correo no se modificó. | `CUS-1001`, acción `call_zJ3koasJ6wdN3kBWnu0ed3o9` |
-| Error de negocio (`CUS-ABCD`) | `react` | "Soy CUS-ABCD, actualiza mi correo a ana.demo@example.com" | El agente pidió confirmación explícita; al responder "Sí, confírmalo", detectó que `CUS-ABCD` no cumple el formato esperado y no llamó ninguna tool. Respondió que debía enviar un código válido con el formato `CUS-1234`. | Sin ejecución ni acción registrada |
+| Error de negocio (`CUS-9999`) | `react` | "Soy CUS-9999, actualiza mi correo a ana.demo@example.com" | El agente pidió confirmación explícita; al responder "Sí, confírmalo", detectó que `CUS-9999` no cumple el formato esperado y no llamó ninguna tool. Respondió que debía enviar un código válido con el formato `CUS-1234`. | Sin ejecución ni acción registrada |
 | Input inválido | `agent_framework` | "Soy 1001, actualiza mi correo a ana.demo@example.com" | El agente detectó que `1001` no usa el formato esperado `CUS-1001`. Repitió el correo solicitado y pidió confirmar si el código correcto era `CUS-1001`. No llamó ninguna tool ni creó una solicitud pendiente. | Sin ejecución ni acción registrada |
 
 ### La trayectoria en el log
@@ -212,8 +212,8 @@ Terminal 2 mostró estos tiempos relevantes:
 - Caso aprobado, segundo turno: primer texto en `20344 ms` y respuesta completa en `21118 ms`, con `3059` tokens de entrada y `2162` de salida.
 - Caso rechazado, primer turno: primer texto en `10493 ms` y respuesta completa en `10702 ms`, con `1236` tokens de entrada y `550` de salida.
 - Caso rechazado, segundo turno: primer texto en `17447 ms` y respuesta completa en `17613 ms`, con `3023` tokens de entrada y `1688` de salida.
-- Caso con código inválido `CUS-ABCD`, primer turno: primer texto en `11544 ms` y respuesta completa en `11796 ms`, con `2498` tokens de entrada y `1033` de salida.
-- Caso con código inválido `CUS-ABCD`, segundo turno: primer texto en `15729 ms` y respuesta completa en `16728 ms`, con `2698` tokens de entrada y `1746` de salida.
+- Caso con código inválido `CUS-9999`, primer turno: primer texto en `11544 ms` y respuesta completa en `11796 ms`, con `2498` tokens de entrada y `1033` de salida.
+- Caso con código inválido `CUS-9999`, segundo turno: primer texto en `15729 ms` y respuesta completa en `16728 ms`, con `2698` tokens de entrada y `1746` de salida.
 - Caso con formato inválido `1001`: primer texto en `16126 ms` y respuesta completa en `16279 ms`, con `1234` tokens de entrada y `1305` de salida.
 
 ### ¿Algo se ejecutó sin que lo aprobaras?
@@ -240,7 +240,7 @@ Al responder el asesor con `n`, recibió y registró el rechazo:
 
 El agente informó al cliente que la solicitud fue rechazada y que no se ejecutó.
 
-En el caso de `CUS-ABCD`, no se registró ni ejecutó ninguna acción sensible:
+En el caso de `CUS-9999`, no se registró ni ejecutó ninguna acción sensible:
 
 - El agente pidió inicialmente confirmar el cambio.
 - Tras recibir la confirmación, rechazó continuar porque el código no tenía el formato válido `CUS-1234`.
@@ -264,7 +264,7 @@ En el caso de rechazo, el flujo también quedó protegido:
 - La trayectoria pasó de `pending_approval` a `rejected`.
 - El agente informó el rechazo con claridad y afirmó que no se ejecutó.
 
-En el caso de entrada inválida `CUS-ABCD`, el agente aplicó una validación previa:
+En el caso de entrada inválida `CUS-9999`, el agente aplicó una validación previa:
 
 - Detectó que el identificador no usa el formato esperado.
 - No llamó la tool ni creó una solicitud pendiente.
