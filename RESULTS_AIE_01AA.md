@@ -96,5 +96,3 @@ No. La prueba del tipo de cambio era la más propensa a que inventara una cifra,
 - **La consulta usa la tool correcta,** con sus parámetros, y responde con lo que trajo.
 - **Las acciones sensibles quedan retenidas:** `update_contact_details` espera aprobación humana y el agente lo explica sin decir que el cambio ya está hecho.
 - **Cuando falta la información o la tool falla, no rellena con datos:** lo dice claramente y deriva a un canal oficial.
-
-
