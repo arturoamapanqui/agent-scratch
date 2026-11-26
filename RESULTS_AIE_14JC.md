@@ -868,3 +868,32 @@ No. En la simulación, `update_contact_details` permaneció en `pendiente_aproba
 - **Error de negocio:** `CUS-9999` no encontrado; operación detenida.
 - **Input inválido:** `1001` no cumplió el formato `CUS-1234`.
 - **Seguridad:** las acciones sensibles requieren aprobación humana antes de ejecutarse.
+
+## Sesión 9 — Despliegue en Azure
+
+Equipo: `team-05`. Dominio: `support`.
+
+| Comprobación                    | Resultado                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| Tests en el contenedor (paso 3) | ........................................................................ [ 50%] |
+
+............................sssss....................................... [100%]
+139 passed, 5 skipped in 2.76s|
+| Acción aprobada después de reiniciar `uvicorn` (paso 2, Cosmos DB) | _(anotar)_ |
+| Imagen desplegada (`team-05/agent:<sha>`) | _(anotar)_ |
+| Revisión activa y duración del job `deploy` | _(anotar)_ |
+| `/health` del agente desplegado | _(anotar)_ |
+| Respuesta con `Fuentes:` contra Azure (y su tiempo en ms) | _(anotar)_ |
+| Acción aprobada contra Azure, con su `resultado:` | _(anotar)_ |
+
+### Qué pone Azure y qué pone la imagen
+
+_(anotar)_ (solo nombres de variables, nunca valores)
+
+### Problemas que encontraste y cómo los resolviste
+
+_(anotar)_
+
+### Conclusión
+
+_(anotar)_
