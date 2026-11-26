@@ -64,7 +64,7 @@ La cita prohibida de support-25 se corrigió en el prompt del dominio (detalle e
 | `MAX_TURNS` | 10 |
 | Juez | `local` (G-Eval con `gpt-5-mini`); alternativo `azure_evaluation` (`decision-1`) |
 
-## Sesión 6 — Tools del MCP en el chat
+## Sesión 6 — Agentes y MCP
 
 Dominio: `support`. MCP usado en el chat: el compartido (`bank-mcp`, vía `MCP_URL`). Al arrancar, el agente registró `3 tools: get_request_status, find_branches, update_contact_details`.
 
@@ -97,3 +97,114 @@ No. La prueba del tipo de cambio era la más propensa a que inventara una cifra,
 - **Las acciones sensibles quedan retenidas:** `update_contact_details` espera aprobación humana y el agente lo explica sin decir que el cambio ya está hecho.
 - **Cuando falta la información o la tool falla, no rellena con datos:** lo dice claramente y deriva a un canal oficial.
 
+## Sesión 7 — Skills, memoria de trabajo y Agent Framework
+
+Dominio: `support`. La misma conversación con los dos runtimes (paso 7).
+
+| | `react` | `agent_framework` |
+|---|---|---|
+| Tools pedidas en la consulta | `find_branches(district=Miraflores)` → BRN-02 | `find_branches(district=Miraflores)` → BRN-02 |
+| La acción sensible quedó **NO SE EJECUTA** | No llegó a llamar `update_contact_details`: repitió el dato, pidió confirmación y explicó la validación por código y la aprobación del asesor | Igual: no llamó `update_contact_details`; pidió confirmación explícita antes de iniciar la solicitud |
+| Pregunta de memoria respondida sin `→` | Sí: "Calle Ficticia 456", sin llamar tools | Sí: "Calle Ficticia 456", sin llamar tools |
+| Primer texto (ms) | 12873 / 11710 / 12276 | 16457 / 15567 / 13403 |
+| Respuesta completa (ms) | 13024 / 11979 / 12306 | 16600 / 15725 / 13406 |
+| Tokens (entrada / salida) | 3293/843 · 2164/1049 · 2369/1048 | 2542/620 · 1776/1297 · 1963/1046 |
+
+Los tiempos y tokens van por turno: consulta / acción sensible / pregunta de memoria.
+
+### ¿La skill frenó la tool de otro dominio?
+
+Mensaje: "Soy CUS-1001, ¿qué comisiones me cobraron?" (pide `get_charged_fees`, una tool del dominio `fees` que la skill `support` no ofrece).
+
+Respuesta: **sí, la frenó en los dos runtimes.** Ninguno intentó llamar una tool (no hay `→`), los dos reconocieron que no pueden consultar comisiones "con las herramientas disponibles aquí" y derivaron a la app, al estado de cuenta o a una agencia. Además ofrecieron lo que sí está en la skill: buscar la agencia más cercana.
+
+| | `react` | `agent_framework` |
+|---|---|---|
+| Intención | `data_query` | `data_query` |
+| Tool llamada | ninguna | ninguna |
+| Primer texto / completa (ms) | 16033 / 16322 | 9515 / 9814 |
+| Tokens (entrada / salida) | 1195 / 1028 | 1195 / 692 |
+
+Los dos la clasificaron como `data_query` y no como `out_of_scope`. No es grave porque no inventaron datos, pero el enrutamiento podría afinarse.
+
+### Diferencias entre los dos runtimes
+
+A nivel funcional el comportamiento fue idéntico: invocaron la misma herramienta con idénticos parámetros, frenaron la acción sensible hasta recibir confirmación, referenciaron las mismas fuentes del RAG y resolvieron la consulta de memoria sin repetir la llamada a find_branches.
+
+### Conclusión
+
+El comportamiento del agente se mantuvo intacto tras el cambio de runtime. Al delimitar la skill support las herramientas visibles para el modelo, ninguno de los dos entornos intentó acceder a las comisiones. Tampoco se ejecutaron acciones sensibles sin autorización previa, y gracias a la memoria de trabajo fue posible facilitar la dirección de la agencia sin volver a invocar la herramienta.
+
+## Sesión 8 — Aprobación humana, validación y reintentos
+
+**Dominio:** `support` (paso 6).
+
+| Caso | Runtime | Mensaje | Qué pasó | Resultado o ID |
+|---|---|---|---|---|
+| Aprobar | `agent_framework` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" → "Sí, confírmalo" | El agente solicitó confirmación antes de invocar `update_contact_details`. La herramienta quedó en `pending_approval` sin ejecutarse. El asesor aprobó (`s`) y la herramienta se ejecutó correctamente, devolviendo los datos del cliente con el correo actualizado. | `call-3206e794` → `pending_approval` → `ok`. |
+| Rechazar | `react` | "Soy CUS-1001, actualiza mi correo a ana.demo@example.com" → "Sí, confírmalo" | El agente solicitó confirmación e invocó la herramienta, que quedó pendiente de aprobación. El asesor rechazó (`n`). La operación no se ejecutó y el agente comunicó el rechazo. | `call_zfxaDhisOpUPz6E4HifS9IoC` → `pending_approval` → `rechazada`. |
+| Error de negocio (`CUS-9999`) | `react` | "Soy CUS-9999, actualiza mi correo a ana.demo@example.com" → "confirmo" | El agente solicitó confirmación, invocó `update_contact_details` y quedó pendiente de aprobación. El asesor aprobó (`s`), pero la herramienta devolvió un error indicando que el servicio bancario no respondía. El agente comunicó que el cambio no fue aplicado, aunque afirmó que la solicitud quedó registrada sin evidencia que lo confirmara. | `call_Z8Xj0daC8ObdBHHtShLWz0Pl` → `pending_approval` → `error`: "El servicio del banco no responde; intenta de nuevo en unos minutos". |
+| Input inválido | `react` | "Mi número de cliente es 1001, ¿qué comisiones me cobraron?" | El agente clasificó la consulta como `data_query`, identificó que no disponía de herramientas para consultar comisiones y ofreció alternativas. Solicitó el código completo (`CUS-1001`). No se invocaron herramientas ni se comprobó una validación formal de parámetros inválidos. | Respuesta controlada, sin ejecución. Validación de input no verificada. |
+
+### La trayectoria en el log
+
+```text
+INFO agent.application.chat_service: trayectoria 3356469e-b1fd-4950-92cd-453fa11675e5: update_contact_details pending_approval → respuesta sensitive_action
+
+INFO agent.application.chat_service: trayectoria 3356469e-b1fd-4950-92cd-453fa11675e5: decisión del asesor → update_contact_details ok
+```
+
+### ¿Algo se ejecutó sin que lo aprobaras?
+
+**No.** En los casos observados, ambos runtimes respetaron el mecanismo de aprobación humana.
+
+- **Aprobación (`agent_framework`):** la herramienta se ejecutó únicamente después de recibir autorización del asesor.
+- **Rechazo (`react`):** la herramienta no se ejecutó porque el asesor rechazó la operación.
+- **Error (`react`):** la herramienta se invocó después de la aprobación, pero falló por falta de respuesta del servicio bancario.
+- **Input inválido (`react`):** no se ejecutaron herramientas.
+
+No se identificaron ejecuciones de acciones sensibles sin autorización previa.
+
+### Conclusión
+
+Los dos runtimes validaron con éxito el flujo Human-in-the-Loop (HITL) durante la gestión de operaciones sensibles. Por un lado, agent_framework completó sin inconvenientes una ejecución previamente autorizada; por otro, react detuvo una solicitud denegada y dio paso a una llamada aprobada que terminó fallando debido a una caída del servicio.
+
+Asimismo, la prueba con el caso CUS-9999 confirmó que, si ocurre un fallo tras obtener la aprobación, dicho error se notifica de vuelta al agente evitando reportar el cambio como efectivo. No obstante, surgieron dos observaciones relevantes
+
+## Sesión 9 — Despliegue en Azure
+
+Equipo: `team-05`. Dominio: `support`.
+
+| Comprobación | Resultado |
+|---|---|
+| Tests en el contenedor (paso 3) | 139 passed, 5 skipped |
+| Acción aprobada después de reiniciar `uvicorn` (paso 2, Cosmos DB) | 144 passed |
+| Imagen desplegada (`team-NN/agent:<sha>`) | acrworkshopjsu3.azurecr.io/team-05/agent |
+| Revisión activa y duración del job `deploy` | https://github.com/arturoamapanqui/agent-scratch/actions/runs/45743594896/job/139654500818 |
+| `/health` del agente desplegado | Agente en https://ca-agent-chat-05.icybush-2ea2dfc1.eastus2.azurecontainerapps.io: ok |
+| Respuesta con `Fuentes:` contra Azure (y su tiempo en ms) | [4] channels-and-hours.html · Canales y horarios de atención > Aplicación y banca por internet (primer texto en 9235 ms, respuesta completa en 9374 ms, 1651 tokens de entrada, 975 de salida) |
+| Acción aprobada contra Azure, con su `resultado:` | Agente [product_question]: Agencias: lunes a viernes de 9:00 a 18:00; sábados de 9:00 a 13:00 (domingos y feriados no atienden). Banca por teléfono: (01) 555-0200, lunes a sábado de 8:00 a 20:00. Aplicación y banca por internet: disponibles las 24 horas, todos los días. |
+
+### Qué pone Azure y qué pone la imagen
+
+- APPLICATIONINSIGHTS_CONNECTION_STRING
+- AZURE_CLIENT_ID
+- AZURE_OPENAI_ENDPOINT
+- COSMOS_CONTAINER
+- COSMOS_DATABASE
+- COSMOS_ENDPOINT
+- FOUNDRY_PROJECT_ENDPOINT
+- KEY_VAULT_URI
+- MCP_SCOPE
+- MCP_URL
+- SEARCH_ENDPOINT
+- SEARCH_INDEX
+- TEAM_ID
+
+### Problemas que encontraste y cómo los resolviste
+
+N/A 
+
+### Conclusión
+
+Tras completar el despliegue del agente en Azure, se llevaron a cabo las pruebas de validación correspondientes. Para ello, se utilizó un cliente desarrollado en Python desde un entorno local, lo que permitió verificar la correcta conectividad y el intercambio de peticiones y respuestas con el servicio alojado en Azure.
