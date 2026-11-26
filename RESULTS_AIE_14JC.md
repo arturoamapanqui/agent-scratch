@@ -868,3 +868,44 @@ No. En la simulación, `update_contact_details` permaneció en `pendiente_aproba
 - **Error de negocio:** `CUS-9999` no encontrado; operación detenida.
 - **Input inválido:** `1001` no cumplió el formato `CUS-1234`.
 - **Seguridad:** las acciones sensibles requieren aprobación humana antes de ejecutarse.
+
+## Sesión 9 — Despliegue en Azure
+
+Equipo: `team-05`. Dominio: `support`.
+
+| Comprobación                    | Resultado                                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------- |
+| Tests en el contenedor (paso 3) | ........................................................................ [ 50%] |
+
+............................sssss....................................... [100%]
+139 passed, 5 skipped in 2.76s|
+| Acción aprobada después de reiniciar `uvicorn` (paso 2, Cosmos DB) | 144 passed |
+| Imagen desplegada (`team-05/agent:<sha>`) | acrworkshopjsu3.azurecr.io/team-05/agent |
+| Revisión activa y duración del job `deploy` | https://github.com/arturoamapanqui/agent-scratch/actions/runs/45743594896/job/139654500818 |
+| `/health` del agente desplegado | Agente en https://ca-agent-chat-05.icybush-2ea2dfc1.eastus2.azurecontainerapps.io: ok |
+| Respuesta con `Fuentes:` contra Azure (y su tiempo en ms) | [4] channels-and-hours.html · Canales y horarios de atención > Aplicación y banca por internet (primer texto en 9235 ms, respuesta completa en 9374 ms, 1651 tokens de entrada, 975 de salida) |
+| Acción aprobada contra Azure, con su `resultado:` | Agente [product_question]: Agencias: lunes a viernes de 9:00 a 18:00; sábados de 9:00 a 13:00 (domingos y feriados no atienden). Banca por teléfono: (01) 555-0200, lunes a sábado de 8:00 a 20:00. Aplicación y banca por internet: disponibles las 24 horas, todos los días. |
+
+### Qué pone Azure y qué pone la imagen
+
+- APPLICATIONINSIGHTS_CONNECTION_STRING
+- AZURE_CLIENT_ID
+- AZURE_OPENAI_ENDPOINT
+- COSMOS_CONTAINER
+- COSMOS_DATABASE
+- COSMOS_ENDPOINT
+- FOUNDRY_PROJECT_ENDPOINT
+- KEY_VAULT_URI
+- MCP_SCOPE
+- MCP_URL
+- SEARCH_ENDPOINT
+- SEARCH_INDEX
+- TEAM_ID
+
+### Problemas que encontraste y cómo los resolviste
+
+N/A
+
+### Conclusión
+
+Una vez finalizado el despliegue del agente en Azure, se realizaron pruebas funcionales mediante un cliente Python ejecutado desde un entorno local. Los resultados permitieron confirmar la disponibilidad del servicio, la correcta comunicación entre ambos entornos y el procesamiento satisfactorio de las solicitudes enviadas al agente desplegado en la nube.
