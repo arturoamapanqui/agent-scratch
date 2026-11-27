@@ -441,341 +441,27 @@ tokens: 22846 de entrada, 13779 de salida
 
 ## Sesión 6 — Tools del MCP en el chat
 
+Dominio: `support`. MCP: el mock (`http://127.0.0.1:8200/mcp`) y, si ya tienes `MCP_URL`, el compartido (`bank-mcp`).
+
 ### Tools de tu dominio
 
-❯ uv run python dev/mcp/mcp_tools.py
-http://127.0.0.1:8200/mcp · support · 3 tools
-find_branches consulta district, service
-get_request_status consulta request_id
-update_contact_details acción sensible customer_id, email, phone
-
-### ¿El modelo inventó algún dato cuando ninguna tool lo resolvía?
-
-uv run python dev/mcp/mcp_tools.py simulate_installment amount=20000 term_months=24
-Error de la tool: Unknown tool: 'simulate_installment'
-
-❯ uv run pytest
-==================================================================================== test session starts ====================================================================================
-platform darwin -- Python 3.12.7, pytest-9.1.1, pluggy-1.7.0
-rootdir: /Users/joseph/CodeMe/credicorp/team-5
-configfile: pyproject.toml
-testpaths: tests
-plugins: platformdirs-4.14.5, anyio-4.15.1
-collected 99 items
-
-tests/application/test_chat_service.py ................. [ 17%]
-tests/application/test_chunker.py ..... [ 22%]
-tests/application/test_evaluation.py ...... [ 28%]
-tests/application/test_ingest_corpus.py .. [ 30%]
-tests/application/test_redaction.py .. [ 32%]
-tests/dev/test_mock_mcp.py ....... [ 39%]
-tests/domain/test_golden_case.py . [ 40%]
-tests/domain/test_models.py ....... [ 47%]
-tests/infrastructure/test_api.py .................. [ 65%]
-tests/infrastructure/test_azure_search_knowledge_base.py . [ 66%]
-tests/infrastructure/test_decision_judge.py ... [ 69%]
-tests/infrastructure/test_foundry_chat_model.py . [ 70%]
-tests/infrastructure/test_geval_judge.py . [ 71%]
-tests/infrastructure/test_golden_sets.py ....... [ 78%]
-tests/infrastructure/test_health.py .. [ 80%]
-tests/infrastructure/test_hybrid.py ... [ 83%]
-tests/infrastructure/test_loaders.py ....... [ 90%]
-tests/infrastructure/test_qdrant_knowledge_base.py .... [ 94%]
-tests/infrastructure/test_settings.py ..... [100%]
-
-==================================================================================== 99 passed in 1.69s =====================================================================================
-
-### Test app with chat
-
-❯ uv run uvicorn agent.infrastructure.bootstrap:create_app --factory --reload
-INFO: Will watch for changes in these directories: ['/Users/joseph/CodeMe/credicorp/team-5']
-INFO: Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO: Started reloader process [92989] using WatchFiles
-INFO agent.infrastructure.bootstrap: Foundry auth provider: entra_id
-INFO azure.identity.\_credentials.environment: No environment configuration found.
-INFO azure.identity.\_credentials.managed_identity: ManagedIdentityCredential will use IMDS
-INFO agent.infrastructure.bootstrap: Foundry auth provider: entra_id
-INFO azure.identity.\_credentials.environment: No environment configuration found.
-INFO azure.identity.\_credentials.managed_identity: ManagedIdentityCredential will use IMDS
-INFO agent.infrastructure.bootstrap: Knowledge base: local · /Users/joseph/CodeMe/credicorp/team-5/data/index/support · 28 chunks
-INFO azure.identity.\_credentials.environment: No environment configuration found.
-INFO azure.identity.\_credentials.managed_identity: ManagedIdentityCredential will use IMDS
-INFO azure.core.pipeline.policies.http_logging_policy: Request URL: 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=REDACTED'
-Request method: 'GET'
-Request headers:
-'x-ms-client-request-id': '177bd316-e226-11f1-a6ab-332100c0b7b2'
-'User-Agent': 'azsdk-python-identity/1.26.0 Python/3.12.7 (macOS-27.2.1-arm64-arm-64bit)'
-No body was attached to the request
-INFO azure.identity.\_credentials.chained: DefaultAzureCredential acquired a token from AzureCliCredential
-INFO httpx2: HTTP Request: POST http://127.0.0.1:8200/mcp "HTTP/1.1 200 OK"
-INFO httpx2: HTTP Request: POST http://127.0.0.1:8200/mcp "HTTP/1.1 200 OK"
-INFO agent.infrastructure.bootstrap: MCP: http://127.0.0.1:8200/mcp · 3 tools: get_request_status, find_branches, update_contact_details
-INFO: Started server process [92991]
-INFO: Waiting for application startup.
-INFO: Application startup complete.
+| MCP        | Tools que lista `dev/mcp/mcp_tools.py`                           |
+| ---------- | ---------------------------------------------------------------- |
+| Mock       | tools find_branches, get_request_status, update_contact_details  |
+| Compartido | `find_branches`, `get_request_status` , `update_contact_details` |
 
 ### Conversación en `dev/chat.py` (paso 12)
 
-Tú: ¿Dónde hay una agencia en Miraflores?
-→ find_branches(district=Miraflores, service=None)
-resultado: {"result": [{"id": "BRN-02", "name": "Agencia Miraflores", "district": "Miraflores", "address": "Calle Ficticia 456", "hours": "L-V 9:00-18:00", "services": ["c
-Agente [data_query]: En Miraflores tenemos la Agencia Miraflores: Calle Ficticia 456. Horario L-V 9:00-18:00. Servicios: caja y plataforma. ¿Deseas que te indique cómo llegar o agende una cita?
-(primer texto en 11987 ms, respuesta completa en 12141 ms, 2633 tokens de entrada, 717 de salida)
+| Prueba                   | Mensaje                                                           | Tool pedida (`→`)      | Qué pasó                                                                                                                                                                                            | Primer texto / respuesta completa (ms)                                                           |
+| ------------------------ | ----------------------------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Consulta de tu dominio   | ¿Dónde hay una agencia en Miraflores?                             | find_branches          | Encontré una agencia en Miraflores: Agencia Miraflores, Calle Ficticia 456. Horario: lunes a viernes 9:00–18:00. Servicios: caja y plataforma. ¿Deseas indicaciones o que te confirme otro detalle? | primer texto en 17437 ms, respuesta completa en 17653 ms, 2160 tokens de entrada, 620 de salida  |
+| Acción confirmada        | Soy CUS-1001, actualiza mi correo a perez.torres@banco.com        | update_contact_details | NO SE EJECUTA, pendiente de aprobación                                                                                                                                                              | primer texto en 26814 ms, respuesta completa en 26814 ms, 2114 tokens de entrada, 1932 de salida |
+| Sin tool que la resuelva | ¿Cuál es el saldo de mi cuenta de ahorros?                        | Ninguna tool           | No puedo consultar saldos desde aquí ni acceder a tu cuenta.                                                                                                                                        | primer texto en 11056 ms, respuesta completa en 11301 ms, 1499 tokens de entrada, 998 de salida  |
+| Tool de otro dominio     | ¿Cuánto pagaría al mes por un préstamo de 20000 soles a 24 meses? | NINGUNA tool           | En los fragmentos proporcionados no aparece la tasa de interés ni los datos necesarios para calcular la cuota mensual de un préstamo de S/20,000 a 24 meses, por lo que no puedo calcular el pago.  | primer texto en 15210 ms, respuesta completa en 15210 ms, 1682 tokens de entrada, 1532 de salida |
 
-### Run script for MCP Tool npx
+### ¿El modelo inventó algún dato cuando ninguna tool lo resolvía?
 
-❯ npx -y @modelcontextprotocol/inspector --cli --server-url http://127.0.0.1:8200/mcp --transport http --header "X-Bank-Domain: support" --method tools/list
-npm notice run npx
-npm notice run 'inspector' --cli --server-url http://127.0.0.1:8200/mcp --transport http --header X-Bank-Domain: support --method tools/list
-{
-"tools": [
-{
-"name": "get_request_status",
-"title": "Get Request Status",
-"description": "Estado de una solicitud de atención del cliente.",
-"inputSchema": {
-"type": "object",
-"properties": {
-"request_id": {
-"description": "Código de la solicitud, por ejemplo REQ-6001.",
-"type": "string"
-}
-},
-"required": [
-"request_id"
-],
-"additionalProperties": false
-},
-"outputSchema": {
-"type": "object",
-"properties": {
-"id": {
-"type": "string"
-},
-"customer_id": {
-"type": "string"
-},
-"type": {
-"type": "string"
-},
-"status": {
-"type": "string"
-},
-"channel": {
-"type": "string"
-},
-"updated_on": {
-"format": "date",
-"type": "string"
-}
-},
-"required": [
-"id",
-"customer_id",
-"type",
-"status",
-"channel",
-"updated_on"
-]
-},
-"annotations": {
-"readOnlyHint": true,
-"destructiveHint": false,
-"idempotentHint": true,
-"openWorldHint": false
-},
-"\_meta": {
-"fastmcp": {
-"tags": [
-"support"
-]
-}
-}
-},
-{
-"name": "find_branches",
-"title": "Find Branches",
-"description": "Agencias y agentes, filtrados por distrito o por servicio.",
-"inputSchema": {
-"type": "object",
-"properties": {
-"district": {
-"anyOf": [
-{
-"type": "string"
-},
-{
-"type": "null"
-}
-],
-"default": null,
-"description": "Distrito, por ejemplo Miraflores."
-},
-"service": {
-"anyOf": [
-{
-"type": "string"
-},
-{
-"type": "null"
-}
-],
-"default": null,
-"description": "Servicio: caja, plataforma, cajero."
-}
-},
-"additionalProperties": false
-},
-"outputSchema": {
-"type": "object",
-"properties": {
-"result": {
-"items": {
-"properties": {
-"id": {
-"type": "string"
-},
-"name": {
-"type": "string"
-},
-"district": {
-"type": "string"
-},
-"address": {
-"type": "string"
-},
-"hours": {
-"type": "string"
-},
-"services": {
-"items": {
-"type": "string"
-},
-"type": "array"
-}
-},
-"required": [
-"id",
-"name",
-"district",
-"address",
-"hours",
-"services"
-],
-"type": "object"
-},
-"type": "array"
-}
-},
-"required": [
-"result"
-],
-"x-fastmcp-wrap-result": true
-},
-"annotations": {
-"readOnlyHint": true,
-"destructiveHint": false,
-"idempotentHint": true,
-"openWorldHint": false
-},
-"\_meta": {
-"fastmcp": {
-"tags": [
-"support"
-]
-}
-}
-},
-{
-"name": "update_contact_details",
-"title": "Update Contact Details",
-"description": "Actualiza el correo o el teléfono del cliente. Acción sensible.",
-"inputSchema": {
-"type": "object",
-"properties": {
-"customer_id": {
-"description": "Código del cliente, por ejemplo CUS-1001.",
-"pattern": "^CUS-\\d{4}$",
-"type": "string"
-},
-"email": {
-"anyOf": [
-{
-"type": "string"
-},
-{
-"type": "null"
-}
-],
-"default": null,
-"description": "Nuevo correo."
-},
-"phone": {
-"anyOf": [
-{
-"type": "string"
-},
-{
-"type": "null"
-}
-],
-"default": null,
-"description": "Nuevo teléfono."
-}
-},
-"required": [
-"customer_id"
-],
-"additionalProperties": false
-},
-"outputSchema": {
-"type": "object",
-"properties": {
-"id": {
-"type": "string"
-},
-"full_name": {
-"type": "string"
-},
-"document_masked": {
-"description": "Documento de identidad enmascarado, por ejemplo \*\*\*\*5678.",
-"type": "string"
-},
-"email": {
-"type": "string"
-},
-"phone": {
-"type": "string"
-},
-"segment": {
-"type": "string"
-}
-},
-"required": [
-"id",
-"full_name",
-"document_masked",
-"email",
-"phone",
-"segment"
-]
-},
-"annotations": {
-"readOnlyHint": false,
-"destructiveHint": true,
-"idempotentHint": false,
-"openWorldHint": false
-},
-"\_meta": {
-"fastmcp": {
-"tags": [
-"support"
-]
-}
-}
-}
-]
-}
+No inventa datos, solo indica sus limitaciones para responder la pregunta.
 
 ### Conclusión
 
@@ -909,3 +595,36 @@ N/A
 ### Conclusión
 
 Una vez finalizado el despliegue del agente en Azure, se realizaron pruebas funcionales mediante un cliente Python ejecutado desde un entorno local. Los resultados permitieron confirmar la disponibilidad del servicio, la correcta comunicación entre ambos entornos y el procesamiento satisfactorio de las solicitudes enviadas al agente desplegado en la nube.
+
+## Sesión 10 — Trazas por turno y dashboard
+
+Equipo: `team-05`. App Insights: `appi-team-05`. Los cuatro casos contra el agente desplegado (paso 8).
+
+| Caso                   | `operation_Id`                     | Latencia (ms) | Tokens de entrada | Tokens de salida | Tools                    | Error                | Observaciones                                                                            |
+| ---------------------- | ---------------------------------- | ------------: | ----------------: | ---------------: | ------------------------ | -------------------- | ---------------------------------------------------------------------------------------- |
+| Saludo                 | `8f3a91c7e2454d60b12f86a9c703de51` |          2486 |               842 |              126 | —                        | No                   | Respuesta directa de Foundry Chat sin ejecutar tools.                                    |
+| Consulta con retrieval | `c72e4a90b16543fd82c619e73a504fb8` |          9374 |              1651 |              975 | —                        | No                   | Foundry Chat concentró la mayor parte de la latencia.                                    |
+| Llamada a tool         | `a19d63f84c7b42e5901fa82d36e745bc` |          8752 |              1956 |              620 | `find_branches`          | No                   | Se identificó el tiempo de ejecución de la tool y la generación de la respuesta.         |
+| Error controlado       | `d48b027ea93146cfb57e208a6149dc83` |          5140 |              1432 |              328 | `update_contact_details` | `customer_not_found` | El `operation_Id` permitió localizar el error de negocio asociado al cliente `CUS-9999`. |
+
+En **Observaciones**, una línea: lo que llamó la atención de la traza (qué se llevó el tiempo, la dependencia que falló, si el
+error permite ubicar el turno). En **Tools**, `—` si el turno no llamó ninguna.
+
+### Lo que dice el workbook
+
+| Panel                             | Lo que viste            |
+| --------------------------------- | ----------------------- |
+| Latencia p95 por intención        | 5140                    |
+| Tokens por turno                  | 1.78k                   |
+| Dónde se va el tiempo de un turno | Foundry chat            |
+| Tools con error                   | Sin datos en el periodo |
+
+### ¿Qué optimizarías primero y por qué?
+
+Evaluaria los LLms que se estan usando en los agentes para optimizar en modelos mas pequeños para tareas mas sencillas. Tambien validar el uso de tools si es necesario.
+
+### Conclusión
+
+La integración de Application Insights permitió comprender el comportamiento del agente desplegado mediante el seguimiento de trazas, latencias, consumo de tokens y ejecución de herramientas.
+
+A partir del workbook, se identificó que Foundry Chat concentra la mayor parte del tiempo de procesamiento, convirtiéndose en el principal punto de optimización.
