@@ -278,3 +278,46 @@ En el caso de formato incompleto `1001`, el agente también evitó ejecutar la a
 - No llamó `update_contact_details` ni registró una solicitud pendiente.
 - La trayectoria quedó registrada como `sin tools → respuesta sensitive_action`.
 - Solicitó al cliente que confirmara explícitamente el código completo antes de continuar.
+
+## Sesión 9 — Despliegue en Azure
+
+Equipo: `team-05`. Dominio: `support`. Las pruebas se realizaron en conjunto con el equipo.
+
+| Comprobación | Resultado |
+|---|---|
+| Tests en el contenedor (paso 3) | 139 tests pasaron y 5 se omitieron |
+| Acción aprobada después de reiniciar `uvicorn` (paso 2, Cosmos DB) | 144 tests pasaron |
+| Imagen desplegada (`team-NN/agent:<sha>`) | `acrworkshopjsu3.azurecr.io/team-05/agent` |
+| Revisión activa y duración del job `deploy` | [Ejecución del job `deploy` en GitHub Actions](https://github.com/arturoamapanqui/agent-scratch/actions/runs/45743594896/job/139654500818) |
+| `/health` del agente desplegado | `ok` en https://ca-agent-chat-05.icybush-2ea2dfc1.eastus2.azurecontainerapps.io |
+| Respuesta con `Fuentes:` contra Azure (y su tiempo en ms) | Ante "Como aperturo una cuenta? cuales son los requisitos?", el agente clasificó la consulta como `product_question`. Explicó que la cuenta se abre en agencia o por la app. Los requisitos son ser mayor de 18 años, tener DNI vigente y un celular y un correo propios. En agencia basta con llevar el DNI y la tarjeta física se entrega en el momento. Por la app, la apertura toma unos 10 minutos con validación biométrica y la tarjeta de débito digital queda disponible al instante. Citó `[1] account-opening.md · Apertura de cuenta de ahorros > Requisitos`, `[2] account-opening.md · Apertura de cuenta de ahorros > En agencia`, `[3] account-opening.md · Apertura de cuenta de ahorros > Por la aplicación` y `[4] app-faq.md · Preguntas frecuentes de la aplicación > ¿Puedo transferir desde la app? > ¿Puedo abrir una cuenta desde la app?`. Primer texto a los 5388 ms y respuesta completa a los 5576 ms, con 1290 tokens de entrada y 491 de salida |
+| Acción aprobada contra Azure, con su `resultado:` | Ante "como actualizo mi correo", el agente clasificó la consulta como `sensitive_action`. Pidió el código de cliente (`CUS-...`) y el nuevo correo. Explicó que se enviará un código al correo anterior, que el cambio no se aplica sin confirmación y que, sin acceso al correo anterior, hay que ir a una agencia con el DNI. Indicó que repetirá los datos para confirmarlos y que la solicitud quedará pendiente de aprobación del asesor. Citó `[1] contact-details-update.docx · Actualización de datos de contacto > Cómo se valida` y `[2] contact-details-update.docx · Actualización de datos de contacto > Qué datos se pueden actualizar`. Primer texto a los 5844 ms y respuesta completa a los 6039 ms, con 1329 tokens de entrada y 711 de salida |
+
+### Qué pone Azure y qué pone la imagen
+
+- APPLICATIONINSIGHTS_CONNECTION_STRING
+- AZURE_CLIENT_ID
+- AZURE_OPENAI_ENDPOINT
+- COSMOS_CONTAINER
+- COSMOS_DATABASE
+- COSMOS_ENDPOINT
+- FOUNDRY_PROJECT_ENDPOINT
+- KEY_VAULT_URI
+- MCP_SCOPE
+- MCP_URL
+- SEARCH_ENDPOINT
+- SEARCH_INDEX
+- TEAM_ID
+
+### Problemas que encontraste y cómo los resolviste
+
+No se presentaron problemas durante el despliegue ni en las pruebas posteriores.
+
+### Conclusión
+
+El agente quedó desplegado correctamente en Azure Container Apps y el endpoint `/health` respondió `ok`. Las pruebas se enviaron desde un cliente Python local:
+
+- En la consulta de producto (apertura de cuenta), el agente clasificó la intención como `product_question`, respondió con los requisitos y los dos canales de apertura y citó cuatro fuentes de `account-opening.md` y `app-faq.md`. La respuesta completa tardó unos 5.6 segundos.
+- En la consulta de acción sensible (actualización de correo), el agente clasificó la intención como `sensitive_action`. No intentó hacer el cambio: pidió el código de cliente y el nuevo correo, explicó la validación por código al correo anterior y avisó que la solicitud quedaría pendiente de aprobación del asesor. Citó dos secciones de `contact-details-update.docx` y respondió en unos 6 segundos.
+
+Ambos casos muestran que el servicio en Azure se conecta sin problemas con la búsqueda, el modelo y los demás recursos configurados por variables de entorno. Además, el agente mantiene en la nube el mismo comportamiento que en local: clasifica la intención, cita sus fuentes y protege las acciones sensibles.
