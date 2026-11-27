@@ -208,3 +208,34 @@ N/A
 ### Conclusión
 
 Tras completar el despliegue del agente en Azure, se llevaron a cabo las pruebas de validación correspondientes. Para ello, se utilizó un cliente desarrollado en Python desde un entorno local, lo que permitió verificar la correcta conectividad y el intercambio de peticiones y respuestas con el servicio alojado en Azure.
+
+## Sesión 10 — Trazas por turno y dashboard
+
+Equipo: `team-05`. App Insights: `appi-team-05`. Los cuatro casos contra el agente desplegado (paso 8).
+
+| Caso | `operation_Id` | Latencia (ms) | Tokens de entrada | Tokens de salida | Tools | Error | Observaciones |
+|---|---|---|---|---|---|---|---|
+| Saludo | 4a495ebb-cd1e-4193-9457-e668fa872a59 | 3556 | 1260 | 249 | NA | NA | NA |
+| Consulta con retrieval | 257e948d-5e6c-4358-b282-6d6136534019 | 6439 | 1475 | 581 | NA | NA | NA |
+| Llamada a tool | 0fa5e8e6-f0a1-425e-9600-39f3b66342bd | 6231 | 2754 | 424 | find_branches(district=Miraflores) | NA | NA |
+| Error controlado | NA | NA | NA | NA | NA | NA | NA |
+
+En **Observaciones**, una línea: lo que llamó la atención de la traza (qué se llevó el tiempo, la dependencia que falló, si el
+error permite ubicar el turno). En **Tools**, `—` si el turno no llamó ninguna.
+
+### Lo que dice el workbook
+
+| Panel | Lo que viste |
+|---|---|
+| Latencia p95 por intención | product_question |
+| Tokens por turno | 13.6m |
+| Dónde se va el tiempo de un turno | 38178ms |
+| Tools con error | 0 |
+
+### ¿Qué optimizarías primero y por qué?
+
+Sobre el agente, por el momento no hace falta aplicar optimizaciones inmediatas. En cuanto a Application Insights, la idea sería sumar más dashboards para aprovechar mejor toda la telemetría que genera el agente desplegado en Azure.
+
+### Conclusión
+
+El monitoreo en Application Insights (appi-team-05) mediante operation_Id confirma que el agente es funcionalmente estable y opera sin fallos en el entorno de productivo de Azure.
