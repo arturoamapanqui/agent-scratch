@@ -309,3 +309,34 @@ No tuve problemas
 ### Conclusión
 
 Los resultados permitieron confirmar la disponibilidad del servicio.
+
+
+## **Sesión 10 — Trazas por turno y dashboard**
+
+Equipo: `team-05`. App Insights: `appi-team-05`. Los cuatro casos contra el agente desplegado (paso 8).
+
+| Caso                   | `operation_Id`                     | Latencia (ms) | Tokens de entrada | Tokens de salida | Tools           | Error               | Observaciones                                                                                |
+| ---------------------- | ---------------------------------- | ------------- | ----------------- | ---------------- | --------------- | ------------------- | -------------------------------------------------------------------------------------------- |
+| Saludo                 | `8904778c5c4dc5384d8423d2273f107a` | 3 043         | 1 297             | 183              | —               | No                  | Ejecución exitosa con un consumo total de 1 480 tokens.                                      |
+| Consulta con retrieval | `e8eb05887e6417e428e2ea1f6cfb4fcc` | 7 675         | 1 799             | 935              | —               | No                  | Ejecución exitosa con un consumo total de 2 734 tokens.                                      |
+| Llamada a tool         | `d8590ba616565c1ab5b30b69392ae413` | 18 495        | 2 970             | 825              | `find_branches` | Sí, a nivel de tool | La herramienta falló después de 10 059 ms, pero el turno finalizó exitosamente.              |
+| Error controlado       | `65daec3b1a4e279f8207af7d70788563` | 182           | N/D               | N/D              | —               | `not_found`         | El error se registró en `chat.decision`, permitiendo localizarlo mediante su `operation_Id`. |
+
+*N/D: información no registrada en la traza. Los 182 ms del error controlado corresponden a la duración de `chat.decision`.*
+
+### **Lo que dice el workbook**
+
+| Panel                             | Lo que viste                                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Latencia p95 por intención        | `product_question`: 38 178 ms; `data_query`: 25 549 ms; `sensitive_action`: 12 618 ms; `greeting`: 11 818 ms. Las consultas de productos presentan la mayor latencia p95.                                                                                                                                                                            |
+| Tokens por turno                  | Se registraron 28 turnos. El panel muestra 47,2 m de entrada, 15,9 m de salida, 19,1 m en `tokens_por_turno` y 13,9 en `llm_por_turno`. Predomina el consumo de tokens de entrada. Se requiere verificar las unidades y agregaciones del panel.                                                                                                      |
+| Dónde se va el tiempo de un turno | Foundry Chat concentra el mayor tiempo acumulado con 174 771 ms (48 llamadas), seguido de MCP con 22 359 ms (16 llamadas), Cosmos DB con 15 928 ms (199 llamadas), Foundry Embeddings con 10 899 ms (27 llamadas), otros servicios con 7 838 ms (42 llamadas) y AI Search con 7 484 ms (27 llamadas). MCP presenta la mayor latencia p95: 10 148 ms. |
+| Tools con error                   | `find_branches` registra 6 llamadas: 4 exitosas con p95 de 1 004 ms y 2 fallidas con p95 de 10 555 ms. La tasa de error observada de la herramienta es del 33,3 %.                                                                                                                                                                                   |
+
+### **¿Qué optimizarías primero y por qué?**
+
+Priorizaría las llamadas a Foundry Chat, debido a que concentran el mayor tiempo acumulado de ejecución, evaluando la cantidad de inferencias por turno, el tamaño del contexto y el consumo de tokens de entrada. En segundo lugar, optimizaría la herramienta `find_branches` del servidor MCP, revisando los timeouts, reintentos y mecanismos de manejo de errores, dado que las ejecuciones fallidas superan los 10 segundos y afectan considerablemente la latencia del turno.
+
+### **Conclusión**
+
+El laboratorio permitió validar la observabilidad del agente mediante Application Insights, registrando 28 turnos y un error a nivel de turno, equivalente a una tasa de error observada del 3,57 %. El workbook facilita la identificación de cuellos de botella, el seguimiento del consumo de tokens y la priorización de optimizaciones en rendimiento y confiabilidad del agente.
