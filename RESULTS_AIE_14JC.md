@@ -598,31 +598,33 @@ Una vez finalizado el despliegue del agente en Azure, se realizaron pruebas func
 
 ## Sesión 10 — Trazas por turno y dashboard
 
-Equipo: `team-NN`. App Insights: `appi-team-NN`. Los cuatro casos contra el agente desplegado (paso 8).
+Equipo: `team-05`. App Insights: `appi-team-05`. Los cuatro casos contra el agente desplegado (paso 8).
 
-| Caso                   | `operation_Id` | Latencia (ms) | Tokens de entrada | Tokens de salida | Tools      | Error      | Observaciones |
-| ---------------------- | -------------- | ------------- | ----------------- | ---------------- | ---------- | ---------- | ------------- |
-| Saludo                 | _(anotar)_     | _(anotar)_    | _(anotar)_        | _(anotar)_       | _(anotar)_ | _(anotar)_ | _(anotar)_    |
-| Consulta con retrieval | _(anotar)_     | _(anotar)_    | _(anotar)_        | _(anotar)_       | _(anotar)_ | _(anotar)_ | _(anotar)_    |
-| Llamada a tool         | _(anotar)_     | _(anotar)_    | _(anotar)_        | _(anotar)_       | _(anotar)_ | _(anotar)_ | _(anotar)_    |
-| Error controlado       | _(anotar)_     | _(anotar)_    | _(anotar)_        | _(anotar)_       | _(anotar)_ | _(anotar)_ | _(anotar)_    |
+| Caso                   | `operation_Id`                     | Latencia (ms) | Tokens de entrada | Tokens de salida | Tools                    | Error                | Observaciones                                                                            |
+| ---------------------- | ---------------------------------- | ------------: | ----------------: | ---------------: | ------------------------ | -------------------- | ---------------------------------------------------------------------------------------- |
+| Saludo                 | `8f3a91c7e2454d60b12f86a9c703de51` |          2486 |               842 |              126 | —                        | No                   | Respuesta directa de Foundry Chat sin ejecutar tools.                                    |
+| Consulta con retrieval | `c72e4a90b16543fd82c619e73a504fb8` |          9374 |              1651 |              975 | —                        | No                   | Foundry Chat concentró la mayor parte de la latencia.                                    |
+| Llamada a tool         | `a19d63f84c7b42e5901fa82d36e745bc` |          8752 |              1956 |              620 | `find_branches`          | No                   | Se identificó el tiempo de ejecución de la tool y la generación de la respuesta.         |
+| Error controlado       | `d48b027ea93146cfb57e208a6149dc83` |          5140 |              1432 |              328 | `update_contact_details` | `customer_not_found` | El `operation_Id` permitió localizar el error de negocio asociado al cliente `CUS-9999`. |
 
 En **Observaciones**, una línea: lo que llamó la atención de la traza (qué se llevó el tiempo, la dependencia que falló, si el
 error permite ubicar el turno). En **Tools**, `—` si el turno no llamó ninguna.
 
 ### Lo que dice el workbook
 
-| Panel                             | Lo que viste |
-| --------------------------------- | ------------ |
-| Latencia p95 por intención        | _(anotar)_   |
-| Tokens por turno                  | _(anotar)_   |
-| Dónde se va el tiempo de un turno | _(anotar)_   |
-| Tools con error                   | _(anotar)_   |
+| Panel                             | Lo que viste            |
+| --------------------------------- | ----------------------- |
+| Latencia p95 por intención        | 5140                    |
+| Tokens por turno                  | 1.78k                   |
+| Dónde se va el tiempo de un turno | Foundry chat            |
+| Tools con error                   | Sin datos en el periodo |
 
 ### ¿Qué optimizarías primero y por qué?
 
-_(anotar)_
+Evaluaria los LLms que se estan usando en los agentes para optimizar en modelos mas pequeños para tareas mas sencillas. Tambien validar el uso de tools si es necesario.
 
 ### Conclusión
 
-_(anotar)_
+La integración de Application Insights permitió comprender el comportamiento del agente desplegado mediante el seguimiento de trazas, latencias, consumo de tokens y ejecución de herramientas.
+
+A partir del workbook, se identificó que Foundry Chat concentra la mayor parte del tiempo de procesamiento, convirtiéndose en el principal punto de optimización.
