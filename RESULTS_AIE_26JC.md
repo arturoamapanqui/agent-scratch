@@ -321,3 +321,34 @@ El agente quedó desplegado correctamente en Azure Container Apps y el endpoint 
 - En la consulta de acción sensible (actualización de correo), el agente clasificó la intención como `sensitive_action`. No intentó hacer el cambio: pidió el código de cliente y el nuevo correo, explicó la validación por código al correo anterior y avisó que la solicitud quedaría pendiente de aprobación del asesor. Citó dos secciones de `contact-details-update.docx` y respondió en unos 6 segundos.
 
 Ambos casos muestran que el servicio en Azure se conecta sin problemas con la búsqueda, el modelo y los demás recursos configurados por variables de entorno. Además, el agente mantiene en la nube el mismo comportamiento que en local: clasifica la intención, cita sus fuentes y protege las acciones sensibles.
+
+## Sesión 10 — Trazas por turno y dashboard
+
+Equipo: `team-05`. App Insights: `appi-team-05`. Los cuatro casos contra el agente desplegado (paso 8).
+
+| Caso | `operation_Id` | Latencia (ms) | Tokens de entrada | Tokens de salida | Tools | Error | Observaciones |
+|---|---|---|---|---|---|---|---|
+| Saludo | `c331bb6a80ebe0454ac5965d360970b8` | 8346 | 2496 | 759 | — | — | Intención `greeting`, 3255 tokens en total. Casi todo el turno se va en esperar al modelo: el primer texto llegó a los 8744 ms de 8782 ms medidos en el cliente, así que el streaming no ayuda. Los 759 tokens de salida para una respuesta de una línea son sobre todo razonamiento de `gpt-5-mini`. |
+| Consulta con retrieval | `7f58a0423fba1b92561a0e32fdce9fca` | 5341 | 1290 | 500 | — | — | Intención `product_question`, 1790 tokens en total. Citó cuatro fuentes: tres secciones de `account-opening.md` y una de `app-faq.md`. Es más rápido y usa menos tokens de entrada que el saludo, aunque lleva el contexto recuperado. El primer texto llegó a los 5667 ms de 5817 ms medidos en el cliente, así que otra vez casi todo es espera al modelo. |
+| Llamada a tool | `aacf6c240c76af753cd9465a6244f49d` | 17072 | 3530 | 2204 | `update_contact_details` | — | Intención `sensitive_action`, 5734 tokens en total. Es el turno del "sí, confirmo". Antes hubo un turno de confirmación sin tool (`db4e5c…`, 14500 ms, 3641 tokens). El span de la tool duró solo 4 ms, porque solo dejó la acción pendiente de aprobación (`call-cd996479`). Casi todo el tiempo es el modelo: el primer texto llegó a los 17411 ms de 17562 ms en el cliente. Al aprobar, la decisión quedó en otro `operation_Id` (`02abfe…`, `chat.decision`, 16170 ms). Ahí el span de la tool falló tras 10074 ms con "El servicio del banco no responde", y el agente dijo que la solicitud "quedó registrada", lo que no es del todo cierto. |
+| Error controlado | `f4ec87100ef50e15a3a8023bef89e7e8` | 106 | — | — | — | `not_found` | Aprobación de una acción inventada (`call-inventada`) en una sesión que no existe. El `chat.decision` falló rápido, sin llamar al modelo ni a tools, y respondió 404 "no hay una acción pendiente call-inventada en esta sesión". Aparece en "Turnos con error" con su `session_Id` y su `operation_Id`, así que se ubica directo. |
+
+En **Observaciones**, una línea: lo que llamó la atención de la traza (qué se llevó el tiempo, la dependencia que falló, si el
+error permite ubicar el turno). En **Tools**, `—` si el turno no llamó ninguna.
+
+### Lo que dice el workbook
+
+| Panel | Lo que viste |
+|---|---|
+| Latencia p95 por intención | `sensitive_action` es la más lenta (p50 14500 ms, p95 17072 ms). Le siguen `greeting` (8346 ms) y `product_question` (5341 ms). Con 1 o 2 turnos por intención, el p95 es solo el turno más lento. |
+| Tokens por turno | 5 turnos y 16.5 K tokens (10.3 K de entrada y 6.21 K de salida), unos 3.3 K por turno. La salida es casi el 40 % del total aunque las respuestas son cortas: es el razonamiento de `gpt-5-mini`. |
+| Dónde se va el tiempo de un turno | En Foundry - chat: 45772 ms en 9 llamadas, cerca del 79 % del tiempo HTTP. Le sigue el MCP con 10056 ms en 2 llamadas, por la falla. AI Search, embeddings y Cosmos DB suman menos de 2.1 s. |
+| Tools con error | 1: `update_contact_details` falló con estado `error` tras 10074 ms ("El servicio del banco no responde"). La otra llamada quedó en `pending_approval` (4 ms). "Turnos con error" sale vacío porque el turno respondió igual. |
+
+### ¿Qué optimizarías primero y por qué?
+
+Lo primero sería el razonamiento del modelo. Foundry - chat se lleva cerca del 79 % del tiempo HTTP, y casi el 40 % de los tokens son de salida, aunque las respuestas son cortas. Bajaría el esfuerzo de razonamiento de `gpt-5-mini` en las intenciones simples, como `greeting` y `product_question`: así baja la latencia y el costo sin tocar la lógica del agente. Lo segundo sería el MCP, porque esperó 10 s antes de fallar. Pondría un timeout más corto y haría que el agente diga con claridad que el cambio no se registró.
+
+### Conclusión
+
+Las trazas permiten ubicar cada turno por su `operation_Id` y ver su intención, sus tokens, sus tools y cada servicio que llamó en Azure. El workbook muestra que el cuello de botella es el modelo, no la búsqueda ni Cosmos DB. También muestra que un error de tool no aparece en "Turnos con error": se ve en "Tools del MCP". Además, la traza dejó ver algo que el texto no deja ver: el agente dijo que la solicitud "quedó registrada" aunque la tool falló.
